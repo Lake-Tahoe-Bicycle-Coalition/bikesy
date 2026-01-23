@@ -1,9 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
+import appConfig from 'appConfig';
 
 export const searchSlice = createSlice({
   name: 'search',
   initialState: {
-    scenario: '5',
+    scenario: appConfig.HILL_ROUTING_ENABLED ? '5' : '1',
     startAddress: '',
     endAddress: '',
     startLocation: null,
