@@ -1,4 +1,5 @@
 const config = {
+  OVERRIDE_ROUTING_SERVER: 'http://ec2-52-35-131-66.us-west-2.compute.amazonaws.com',
   WELCOME_MODAL_TITLE: 'Welcome to the Tahoe Bike Map',
   SHOULD_SHOW_WELCOME_MODAL: true,
   SEARCH_BOUNDS: {

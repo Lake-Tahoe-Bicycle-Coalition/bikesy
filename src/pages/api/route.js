@@ -1,3 +1,4 @@
+import appConfig from 'appConfig';
 import Cors from 'cors';
 
 const cors = Cors({
@@ -19,6 +20,10 @@ function runMiddleware(request, res, fn) {
 }
 
 function getServerUrl(scenario) {
+  if (appConfig.OVERRIDE_ROUTING_SERVER) {
+    return appConfig.OVERRIDE_ROUTING_SERVER;
+  }
+
   if (scenario === '1' || scenario === '2' || scenario === '3') {
     return 'http://ec2-54-196-193-14.compute-1.amazonaws.com';
   }
