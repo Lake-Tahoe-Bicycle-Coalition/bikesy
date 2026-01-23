@@ -1,6 +1,16 @@
 const config = {
   HILL_ROUTING_ENABLED: false,
   OVERRIDE_ROUTING_SERVER: 'http://ec2-52-35-131-66.us-west-2.compute.amazonaws.com',
+  ROUTE_TYPES: [
+    {
+      text: 'Mostly bike paths & lanes',
+      value: 1,
+    },
+    {
+      text: 'A more direct route',
+      value: 2,
+    },
+  ],
   WELCOME_MODAL_TITLE: 'Welcome to the Tahoe Bike Map',
   SHOULD_SHOW_WELCOME_MODAL: true,
   SEARCH_BOUNDS: {
