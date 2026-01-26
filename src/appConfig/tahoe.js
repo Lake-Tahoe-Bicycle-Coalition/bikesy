@@ -1,7 +1,7 @@
 const config = {
   HILL_ROUTING_ENABLED: false,
   OVERRIDE_ROUTING_SERVER: 'http://ec2-52-35-131-66.us-west-2.compute.amazonaws.com',
-  ROUTE_TYPES: [
+  ROUTE_TYPE_OPTIONS: [
     {
       text: 'Mostly bike paths & lanes',
       value: 1,

@@ -32,6 +32,20 @@ const config = {
       iconClassName: 'sf-class3',
     },
   ],
+  ROUTE_TYPE_OPTIONS: [
+    {
+      text: 'Mostly bike paths & lanes',
+      value: 1,
+    },
+    {
+      text: 'A reasonable route',
+      value: 2,
+    },
+    {
+      text: 'A more direct route',
+      value: 3,
+    },
+  ],
 };
 
 export default config;

@@ -285,7 +285,7 @@ const Controls = ({
             onChange={handleRouteTypeChange}
             value={routeType}
           >
-            {appConfig.ROUTE_TYPES.map((routeType) => (
+            {appConfig.ROUTE_TYPE_OPTIONS.map((routeType) => (
               <option key={routeType.value} value={routeType.value}>
                 {routeType.text}
               </option>

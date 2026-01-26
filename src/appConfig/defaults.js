@@ -15,20 +15,7 @@ const config = {
   INITIAL_CENTER_LAT: 37.7749,
   INITIAL_CENTER_LNG: -122.4194,
   OVERRIDE_ROUTING_SERVER: null,
-  ROUTE_TYPES: [
-    {
-      text: 'Mostly bike paths & lanes',
-      value: 1,
-    },
-    {
-      text: 'A reasonable route',
-      value: 2,
-    },
-    {
-      text: 'A more direct route',
-      value: 3,
-    },
-  ],
+  ROUTE_TYPE_OPTIONS: [],
   SEARCH_BOUNDS: {
     TOP: 38.0534,
     RIGHT: -121.637,
