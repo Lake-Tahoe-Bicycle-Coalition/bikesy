@@ -11,11 +11,12 @@ const config = {
   // Expected to be overridden for all regions:
   // TODO consider putting placeholders here to force regional overrides
   MAPBOX_STYLE_URL: 'mapbox://styles/bikesy/ckmec4z6h3ekg17lr1fas6kwx',
-  HILL_ROUTING_ENABLED: true,
   INITIAL_CENTER_LAT: 37.7749,
   INITIAL_CENTER_LNG: -122.4194,
-  OVERRIDE_ROUTING_SERVER: null,
+  HILL_ROUTING_OPTIONS: [],
   ROUTE_TYPE_OPTIONS: [],
+  DEFAULT_SCENARIO: '1',
+  SCENARIOS: {},
   SEARCH_BOUNDS: {
     TOP: 38.0534,
     RIGHT: -121.637,

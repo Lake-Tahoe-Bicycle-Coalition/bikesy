@@ -4,7 +4,7 @@ import appConfig from 'appConfig';
 export const searchSlice = createSlice({
   name: 'search',
   initialState: {
-    scenario: appConfig.HILL_ROUTING_ENABLED ? '5' : '1',
+    scenario: appConfig.DEFAULT_SCENARIO,
     startAddress: '',
     endAddress: '',
     startLocation: null,
