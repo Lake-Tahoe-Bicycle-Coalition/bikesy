@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Overlay Changes</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+    />
+    <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+    <style>
+      /* Layout: change list (added / removed / changed, include or exclude each) beside a map of the selected stretch. */
+      :root {
+        --bg: #f5f7f6;
+        --panel: #ffffff;
+        --fg: #1b2624;
+        --muted: #5d6b68;
+        --line: #d8e0de;
+        --accent: #1f6f5c;
+        --added: #1e9e4a;
+        --removed: #d23b3b;
+        --changed: #d98c00;
+        --include: #1e7d3c;
+        --exclude: #8a3a3a;
+        --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          --bg: #111816;
+          --panel: #18211f;
+          --fg: #e4ece9;
+          --muted: #95a6a1;
+          --line: #2a3632;
+          --accent: #5cc3a5;
+          --added: #4cc775;
+          --removed: #f06b6b;
+          --changed: #f0ad33;
+          --include: #4cc775;
+          --exclude: #e08787;
+          color-scheme: dark;
+        }
+      }
+      :root[data-theme='dark'] {
+        --bg: #111816;
+        --panel: #18211f;
+        --fg: #e4ece9;
+        --muted: #95a6a1;
+        --line: #2a3632;
+        --accent: #5cc3a5;
+        --added: #4cc775;
+        --removed: #f06b6b;
+        --changed: #f0ad33;
+        --include: #4cc775;
+        --exclude: #e08787;
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.45 var(--font-body);
+        display: grid;
+        grid-template-columns: minmax(0, 400px) minmax(0, 1fr);
+      }
+      aside {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        height: 100%;
+        background: var(--panel);
+        border-right: 1px solid var(--line);
+      }
+      #map {
+        height: 100%;
+        min-width: 0;
+      }
+      header {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 8px;
+      }
+      h1 {
+        font-size: 17px;
+        margin: 0;
+      }
+      .paths {
+        font: 11px var(--font-mono);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+        white-space: pre-line;
+      }
+      .tally {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .tally button {
+        text-align: left;
+        border: 1px solid var(--line);
+        border-left: 4px solid var(--t);
+        border-radius: 6px;
+        padding: 6px 8px;
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+        font: inherit;
+      }
+      .tally button[aria-pressed='false'] {
+        opacity: 0.45;
+      }
+      .tally b {
+        display: block;
+        font: 600 15px var(--font-mono);
+        font-variant-numeric: tabular-nums;
+      }
+      .tally span {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .t-added {
+        --t: var(--added);
+      }
+      .t-removed {
+        --t: var(--removed);
+      }
+      .t-changed {
+        --t: var(--changed);
+      }
+      .row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+      .chip {
+        font: 500 12px var(--font-body);
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--fg);
+        border-radius: 999px;
+        padding: 3px 9px;
+        cursor: pointer;
+      }
+      .chip[aria-pressed='true'] {
+        background: var(--fg);
+        color: var(--panel);
+        border-color: var(--fg);
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .hint {
+        font-size: 11px;
+        color: var(--muted);
+      }
+      kbd {
+        font: 11px var(--font-mono);
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        padding: 0 3px;
+      }
+      #list {
+        overflow-y: auto;
+        flex: 1;
+        min-height: 0;
+      }
+      .empty {
+        padding: 24px 16px;
+        color: var(--muted);
+      }
+      .item {
+        border-bottom: 1px solid var(--line);
+        border-left: 4px solid var(--t);
+        padding: 8px 12px 8px 12px;
+        display: grid;
+        gap: 4px;
+        cursor: pointer;
+      }
+      .item.sel {
+        background: color-mix(in srgb, var(--t) 11%, transparent);
+      }
+      .item .top {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: baseline;
+      }
+      .item .what {
+        font-weight: 600;
+        min-width: 0;
+        overflow-wrap: anywhere;
+      }
+      .num {
+        font: 12px var(--font-mono);
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .item .sub {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .decide {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .decide button {
+        font: 600 12px var(--font-body);
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--fg);
+        border-radius: 6px;
+        padding: 3px 10px;
+        cursor: pointer;
+      }
+      .decide button.inc[aria-pressed='true'] {
+        background: var(--include);
+        border-color: var(--include);
+        color: #fff;
+      }
+      .decide button.exc[aria-pressed='true'] {
+        background: var(--exclude);
+        border-color: var(--exclude);
+        color: #fff;
+      }
+      .decide .state {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--muted);
+        margin-left: auto;
+      }
+      .more {
+        display: grid;
+        gap: 6px;
+        font-size: 12px;
+        cursor: default;
+      }
+      .more .links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      a,
+      .linkish {
+        color: var(--accent);
+      }
+      .linkish {
+        background: none;
+        border: 0;
+        padding: 0;
+        font: inherit;
+        text-decoration: underline;
+        cursor: pointer;
+      }
+      details summary {
+        cursor: pointer;
+        color: var(--accent);
+      }
+      .why {
+        display: grid;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .why .way {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+      .why .fac {
+        font-size: 12px;
+      }
+      .why .off {
+        color: var(--removed);
+      }
+      .why table {
+        border-collapse: collapse;
+        font: 11px var(--font-mono);
+        margin-top: 4px;
+      }
+      .why td {
+        padding: 1px 8px 1px 0;
+        vertical-align: top;
+        overflow-wrap: anywhere;
+      }
+      textarea {
+        width: 100%;
+        font: 13px var(--font-body);
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 5px 8px;
+        min-height: 32px;
+        resize: vertical;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        padding: 8px 16px;
+        border-top: 1px solid var(--line);
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .legend label {
+        display: inline-flex;
+        gap: 5px;
+        align-items: center;
+        cursor: pointer;
+      }
+      .sw {
+        width: 20px;
+        height: 5px;
+        border-radius: 2px;
+        display: inline-block;
+      }
+      #toast {
+        position: fixed;
+        left: 50%;
+        bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+        transform: translateX(-50%);
+        background: var(--fg);
+        color: var(--panel);
+        font: 600 13px var(--font-body);
+        padding: 8px 14px;
+        border-radius: 8px;
+        z-index: 10;
+      }
+      #error {
+        padding: 12px 16px;
+        color: var(--removed);
+      }
+      @media (max-width: 760px) {
+        body {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: 45vh minmax(0, 1fr);
+        }
+        #map {
+          grid-row: 1;
+          height: 45vh;
+        }
+        aside {
+          grid-row: 2;
+          height: auto;
+          border-right: 0;
+          border-top: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <aside>
+      <header>
+        <h1>Overlay changes</h1>
+        <div class="paths" id="paths"></div>
+        <div class="tally" id="tally"></div>
+        <div class="row" id="statusFilter"></div>
+        <div class="hint">
+          <kbd>j</kbd>/<kbd>k</kbd> next/previous · <kbd>i</kbd> include ·
+          <kbd>x</kbd> exclude · <kbd>u</kbd> undecide. Undecided and excluded changes are
+          not applied.
+        </div>
+      </header>
+      <div id="error" hidden></div>
+      <div id="list" role="list"></div>
+      <div class="legend" id="legend"></div>
+    </aside>
+    <div id="map"></div>
+    <div id="toast" role="status" hidden></div>
+    <script>
+      const LABEL = {
+        I: 'Multi-use Path',
+        II: 'Bike Lane',
+        III: 'Bike Route',
+        IV: 'Protected Bike Lane',
+      };
+      const CLASS_COLOR = { I: '#330066', II: '#660099', III: '#9933cc', IV: '#2a0047' };
+      const TYPE = { added: 'Added', removed: 'Removed', changed: 'Changed' };
+      const state = {
+        types: new Set(Object.keys(TYPE)),
+        status: 'undecided',
+        selected: null,
+      };
+      let DATA,
+        decisions = {};
+      const css = (n) =>
+        getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+      const esc = (s) =>
+        String(s ?? '').replace(
+          /[&<>"]/g,
+          (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c],
+        );
+      const km = (m) => (m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${m} m`);
+
+      let toastTimer;
+      function toast(text) {
+        const t = document.getElementById('toast');
+        t.textContent = text;
+        t.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => (t.hidden = true), 2000);
+      }
+
+      function headline(c) {
+        if (c.type === 'added') return `${LABEL[c.after]} added`;
+        if (c.type === 'removed') return `${LABEL[c.before]} removed`;
+        return `${LABEL[c.before]} → ${LABEL[c.after]}`;
+      }
+      const status = (c) => decisions[c.id]?.decision ?? 'undecided';
+
+      function visible() {
+        return DATA.changes.changes.filter(
+          (c) =>
+            state.types.has(c.type) &&
+            (state.status === 'all' || status(c) === state.status),
+        );
+      }
+
+      function renderTally() {
+        const el = document.getElementById('tally');
+        el.innerHTML = '';
+        for (const [type, label] of Object.entries(TYPE)) {
+          const all = DATA.changes.changes.filter((c) => c.type === type);
+          const done = all.filter((c) => status(c) !== 'undecided').length;
+          const b = document.createElement('button');
+          b.className = `t-${type}`;
+          b.setAttribute('aria-pressed', String(state.types.has(type)));
+          b.innerHTML = `<b>${done}/${all.length}</b><span>${label} decided</span>`;
+          b.addEventListener('click', () => {
+            state.types.has(type) ? state.types.delete(type) : state.types.add(type);
+            render();
+          });
+          el.append(b);
+        }
+      }
+
+      const statusChips = {};
+      for (const [k, label] of [
+        ['undecided', 'Undecided'],
+        ['include', 'Included'],
+        ['exclude', 'Excluded'],
+        ['all', 'All'],
+      ]) {
+        const b = document.createElement('button');
+        b.className = 'chip';
+        b.textContent = label;
+        b.setAttribute('aria-pressed', String(k === state.status));
+        b.addEventListener('click', () => {
+          state.status = k;
+          for (const [s, x] of Object.entries(statusChips))
+            x.setAttribute('aria-pressed', String(s === k));
+          render();
+        });
+        statusChips[k] = b;
+        document.getElementById('statusFilter').append(b);
+      }
+
+      async function decide(c, decision) {
+        const res = await fetch('/decisions', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id: c.id, decision }),
+        });
+        if (!res.ok) return toast('Could not save. Is review.mjs still running?');
+        const saved = await res.json();
+        if (saved.decision || saved.note) decisions[c.id] = saved;
+        else delete decisions[c.id];
+        toast(
+          decision === 'include'
+            ? 'Included'
+            : decision === 'exclude'
+              ? 'Excluded'
+              : 'Undecided',
+        );
+        // Stay in place in the list: move to the next undecided change when filtering by Undecided.
+        const list = visible();
+        if (state.status === 'undecided' && decision) {
+          const next =
+            list.find(
+              (x) =>
+                x.id !== c.id &&
+                DATA.changes.changes.indexOf(x) > DATA.changes.changes.indexOf(c),
+            ) ?? list.find((x) => x.id !== c.id);
+          state.selected = next?.id ?? null;
+          render();
+          if (next) zoomTo(next);
+        } else render();
+      }
+
+      async function saveNote(c, note) {
+        await fetch('/decisions', {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            id: c.id,
+            decision: decisions[c.id]?.decision ?? null,
+            note,
+          }),
+        });
+        decisions[c.id] = { ...(decisions[c.id] ?? {}), note };
+      }
+
+      async function copyIds(ids) {
+        const text = [...new Set(ids)].map((id) => `w${id}`).join(', ');
+        try {
+          await navigator.clipboard.writeText(text);
+          toast(`Copied ${ids.length} way ID${ids.length === 1 ? '' : 's'}`);
+        } catch {
+          toast(text);
+        }
+      }
+
+      async function renderWhy(c, el) {
+        if (!c.ways.length) {
+          el.innerHTML = '<div class="hint">No OSM ways found along this stretch.</div>';
+          return;
+        }
+        el.innerHTML = '<div class="hint">Loading…</div>';
+        const parts = await Promise.all(
+          c.ways.map(async (w) => {
+            const info = await (await fetch(`/why/${w.id}`)).json();
+            const head = `<a href="https://www.openstreetmap.org/way/${w.id}" target="_blank" rel="noopener">w${w.id}</a> ${esc(w.name ?? '(unnamed)')} <span class="num">${esc(w.highway ?? '')}</span>`;
+            if (info.found === false)
+              return `<div class="way">${head}<div class="fac">Not a candidate in this run: no bike tags the generator recognises.</div></div>`;
+            const fac = info.facilities
+              .map(
+                (f) =>
+                  `<div class="fac${f.eligible ? '' : ' off'}">${f.class ? `Class ${f.class}` : 'No class'} · ${esc(f.kind)} · ${esc(f.side)} · ${esc(f.surface)}${f.eligible ? '' : ' · withheld'} <span class="num">${esc((f.evidence ?? []).join(', '))}</span>${(f.warnings ?? []).length ? ` <span class="num">${esc(f.warnings.join(', '))}</span>` : ''}</div>`,
+              )
+              .join('');
+            const rows = Object.entries(info.tags)
+              .map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`)
+              .join('');
+            return `<div class="way">${head}${fac}${info.warnings.length ? `<div class="num">${esc(info.warnings.join(', '))}</div>` : ''}<table>${rows}</table></div>`;
+          }),
+        );
+        el.innerHTML = parts.join('');
+      }
+
+      function render() {
+        renderTally();
+        const list = document.getElementById('list');
+        const items = visible();
+        list.innerHTML = items.length
+          ? ''
+          : '<div class="empty">No changes match. Choose another status, or turn a type back on.</div>';
+        for (const c of items) {
+          const s = status(c);
+          const row = document.createElement('div');
+          row.className = `item t-${c.type}${state.selected === c.id ? ' sel' : ''}`;
+          row.setAttribute('role', 'listitem');
+          row.tabIndex = 0;
+          row.dataset.id = c.id;
+          row.innerHTML = `
+      <div class="top"><span class="what">${headline(c)}</span><span class="num">${km(c.metres)}</span></div>
+      <div class="sub">${esc(c.name ?? (c.ways[0]?.name || '(unnamed)'))}</div>
+      <div class="decide">
+        <button class="inc" aria-pressed="${s === 'include'}">Include</button>
+        <button class="exc" aria-pressed="${s === 'exclude'}">Exclude</button>
+        <span class="state">${s === 'undecided' ? '' : s === 'include' ? 'Included' : 'Excluded'}</span>
+      </div>`;
+          row.querySelector('.inc').addEventListener('click', (e) => {
+            e.stopPropagation();
+            decide(c, s === 'include' ? null : 'include');
+          });
+          row.querySelector('.exc').addEventListener('click', (e) => {
+            e.stopPropagation();
+            decide(c, s === 'exclude' ? null : 'exclude');
+          });
+          if (state.selected === c.id) {
+            const more = document.createElement('div');
+            more.className = 'more';
+            const [lng, lat] = c.mid;
+            more.innerHTML = `
+        <div class="links">
+          <a href="https://www.openstreetmap.org/#map=18/${lat.toFixed(5)}/${lng.toFixed(5)}" target="_blank" rel="noopener">OSM map</a>
+          <a href="https://www.openstreetmap.org/edit?editor=id#map=19/${lat.toFixed(5)}/${lng.toFixed(5)}" target="_blank" rel="noopener">Edit in iD</a>
+          ${c.ways.length ? `<button class="linkish copy">Copy ${c.ways.length} way ID${c.ways.length === 1 ? '' : 's'}</button>` : ''}
+        </div>
+        <textarea id="note" placeholder="Note (optional)">${esc(decisions[c.id]?.note ?? '')}</textarea>
+        <details><summary>Why?</summary><div class="why"></div></details>`;
+            more.addEventListener('click', (e) => e.stopPropagation());
+            more
+              .querySelector('.copy')
+              ?.addEventListener('click', () => copyIds(c.ways.map((w) => w.id)));
+            more
+              .querySelector('textarea')
+              .addEventListener('change', (e) => saveNote(c, e.target.value));
+            const details = more.querySelector('details');
+            details.addEventListener('toggle', () => {
+              if (details.open) renderWhy(c, more.querySelector('.why'));
+            });
+            row.append(more);
+          }
+          row.addEventListener('click', () => select(c.id));
+          list.append(row);
+        }
+        updateChangeLayer();
+      }
+
+      function select(id) {
+        state.selected = id;
+        render();
+        const c = DATA.changes.changes.find((x) => x.id === id);
+        if (c) zoomTo(c);
+        document.querySelector('.item.sel')?.scrollIntoView({ block: 'nearest' });
+      }
+
+      // Keyboard triage.
+      document.addEventListener('keydown', (e) => {
+        if (e.target.closest('textarea, input') || e.metaKey || e.ctrlKey || e.altKey)
+          return;
+        const items = visible();
+        const i = items.findIndex((c) => c.id === state.selected);
+        const current = items[i];
+        if (e.key === 'j' || e.key === 'k') {
+          const next =
+            items[
+              Math.max(0, Math.min(items.length - 1, i + (e.key === 'j' ? 1 : -1)))
+            ] ?? items[0];
+          if (next) select(next.id);
+        } else if (current && e.key === 'i') decide(current, 'include');
+        else if (current && e.key === 'x') decide(current, 'exclude');
+        else if (current && e.key === 'u') decide(current, null);
+      });
+
+      // ---- Map.
+      const map = new maplibregl.Map({
+        container: 'map',
+        style: {
+          version: 8,
+          sources: {
+            osm: {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              maxzoom: 19,
+              attribution: '© OpenStreetMap contributors',
+            },
+            esri: {
+              type: 'raster',
+              tiles: [
+                'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+              ],
+              tileSize: 256,
+              maxzoom: 19,
+              attribution: 'Imagery © Esri, Maxar, Earthstar Geographics',
+            },
+          },
+          layers: [
+            {
+              id: 'osm',
+              type: 'raster',
+              source: 'osm',
+              paint: { 'raster-saturation': -0.6, 'raster-opacity': 0.85 },
+            },
+            {
+              id: 'esri',
+              type: 'raster',
+              source: 'esri',
+              layout: { visibility: 'none' },
+            },
+          ],
+        },
+        center: [0, 0],
+        zoom: 1,
+        hash: true,
+      });
+      map.addControl(new maplibregl.NavigationControl(), 'top-right');
+      map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-right');
+
+      const zoomTo = (c) => {
+        const b = c.coords.reduce(
+          (bb, p) => bb.extend(p),
+          new maplibregl.LngLatBounds(c.coords[0], c.coords[0]),
+        );
+        map.fitBounds(b, {
+          padding: 90,
+          maxZoom: 17,
+          duration: matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 700,
+        });
+      };
+
+      function updateChangeLayer() {
+        const src = map.getSource('changes');
+        if (!src) return;
+        src.setData({
+          type: 'FeatureCollection',
+          features: DATA.changes.changes
+            .filter((c) => state.types.has(c.type))
+            .map((c) => ({
+              type: 'Feature',
+              geometry: {
+                type: 'LineString',
+                coordinates: c.coords.length > 1 ? c.coords : [c.coords[0], c.coords[0]],
+              },
+              properties: {
+                id: c.id,
+                type: c.type,
+                sel: c.id === state.selected,
+                decided: status(c) !== 'undecided',
+              },
+            })),
+        });
+      }
+
+      const TOGGLES = [
+        {
+          id: 'before',
+          label: 'Before',
+          swatch: 'background:#f08c00;opacity:.6',
+          on: true,
+        },
+        { id: 'after', label: 'After', swatch: `background:${CLASS_COLOR.II}`, on: true },
+        { id: 'esri', label: 'Imagery', swatch: 'background:#4a5a3a', on: false },
+      ];
+      for (const t of TOGGLES) {
+        const lab = document.createElement('label');
+        lab.innerHTML = `<input type="checkbox" id="t-${t.id}" ${t.on ? 'checked' : ''}><span class="sw" style="${t.swatch}"></span>${t.label}`;
+        lab.querySelector('input').addEventListener('change', (e) => {
+          const ids =
+            t.id === 'esri' ? ['esri'] : Object.keys(LABEL).map((k) => `${t.id}-${k}`);
+          for (const id of ids)
+            if (map.getLayer(id))
+              map.setLayoutProperty(
+                id,
+                'visibility',
+                e.target.checked ? 'visible' : 'none',
+              );
+        });
+        document.getElementById('legend').append(lab);
+      }
+      const typeLegend = document.createElement('span');
+      typeLegend.innerHTML = Object.entries(TYPE)
+        .map(
+          ([t, l]) => `<span class="sw" style="background:${css(`--${t}`)}"></span> ${l}`,
+        )
+        .join(' &nbsp;');
+      document.getElementById('legend').append(typeLegend);
+
+      async function load() {
+        try {
+          [DATA, decisions] = await Promise.all([
+            (await fetch('/data')).json(),
+            (await fetch('/decisions')).json(),
+          ]);
+        } catch (error) {
+          const el = document.getElementById('error');
+          el.hidden = false;
+          el.textContent = 'Could not load changes. Start the page with review.mjs.';
+          return;
+        }
+        document.getElementById('paths').textContent =
+          `before ${DATA.changes.before}\nafter ${DATA.changes.after}`;
+        state.selected = visible()[0]?.id ?? null;
+        render();
+        const onLoad = () => {
+          for (const k of Object.keys(LABEL)) {
+            if (DATA.before[k]) {
+              map.addSource(`before-${k}`, { type: 'geojson', data: DATA.before[k] });
+              map.addLayer({
+                id: `before-${k}`,
+                type: 'line',
+                source: `before-${k}`,
+                layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: {
+                  'line-color': '#f08c00',
+                  'line-width': ['interpolate', ['linear'], ['zoom'], 10, 3, 16, 11],
+                  'line-opacity': 0.4,
+                },
+              });
+            }
+          }
+          for (const k of Object.keys(LABEL)) {
+            if (DATA.after[k]) {
+              map.addSource(`after-${k}`, { type: 'geojson', data: DATA.after[k] });
+              map.addLayer({
+                id: `after-${k}`,
+                type: 'line',
+                source: `after-${k}`,
+                paint: {
+                  'line-color': CLASS_COLOR[k],
+                  'line-width': k === 'I' ? 1.5 : 2.5,
+                  'line-gap-width': k === 'I' ? 2 : 0,
+                  'line-dasharray': k === 'III' ? [3, 4] : [1, 0],
+                },
+              });
+            }
+          }
+          map.addSource('changes', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] },
+          });
+          map.addLayer({
+            id: 'changes',
+            type: 'line',
+            source: 'changes',
+            layout: { 'line-cap': 'round' },
+            paint: {
+              'line-color': [
+                'match',
+                ['get', 'type'],
+                'added',
+                css('--added'),
+                'removed',
+                css('--removed'),
+                css('--changed'),
+              ],
+              'line-width': ['case', ['get', 'sel'], 10, 6],
+              'line-opacity': [
+                'case',
+                ['get', 'sel'],
+                0.95,
+                ['get', 'decided'],
+                0.25,
+                0.7,
+              ],
+            },
+          });
+          map.on('click', 'changes', (e) => select(e.features[0].properties.id));
+          map.on(
+            'mouseenter',
+            'changes',
+            () => (map.getCanvas().style.cursor = 'pointer'),
+          );
+          map.on('mouseleave', 'changes', () => (map.getCanvas().style.cursor = ''));
+          updateChangeLayer();
+          if (!location.hash) {
+            const all = DATA.changes.changes.flatMap((c) => c.coords);
+            if (all.length)
+              map.fitBounds(
+                all.reduce(
+                  (bb, p) => bb.extend(p),
+                  new maplibregl.LngLatBounds(all[0], all[0]),
+                ),
+                { padding: 40, duration: 0 },
+              );
+          }
+          const first = DATA.changes.changes.find((c) => c.id === state.selected);
+          if (first) zoomTo(first);
+        };
+        map.loaded() ? onLoad() : map.on('load', onLoad);
+      }
+      load();
+    </script>
+  </body>
+</html>
