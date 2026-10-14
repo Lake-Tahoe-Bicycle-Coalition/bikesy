@@ -2,9 +2,10 @@
 
 Usage: python -I ways_near.py EXTRACT.osm.pbf GAPS.json OUT.json
 GAPS.json: {"gap id": [[lng, lat], ...]} sampled about every 10 m.
-OUT.json:  {"gap id": [{"id": way_id, "name": ..., "highway": ...}, ...]}
-A way counts when it is within 20 m of at least half the samples, or of six samples
-(about 60 m), so cross streets that only touch the stretch are left out.
+OUT.json:  {"gap id": [{"id": way_id, "name": ..., "highway": ..., "metres": along}, ...]}
+metres is the stretch length within 20 m of the way (samples x 10 m). A way is kept when
+that is at least min(20% of the stretch, 150 m), so cross streets and short footways that
+only touch the stretch are left out. Ways are sorted by metres, longest first.
 """
 import json
 import math
@@ -14,6 +15,9 @@ from collections import defaultdict
 import osmium
 
 TOL = 20.0
+STEP = 10
+MIN_SHARE = 0.2
+MIN_METRES = 150
 CELL = 0.0005  # degrees; about 45-55 m around Tahoe
 KX = 111320 * math.cos(math.radians(39.05))
 KY = 110570
@@ -57,12 +61,14 @@ def main():
 
     result = {}
     for gid, coords in gaps.items():
-        need = min(6, max(1, math.ceil(len(coords) / 2)))
+        need = min(MIN_SHARE * len(coords), MIN_METRES / STEP)
         ways = sorted(
             (wid for wid, samples in hits[gid].items() if len(samples) >= need),
             key=lambda wid: -len(hits[gid][wid]),
         )
-        result[gid] = [{"id": wid, **info[wid]} for wid in ways]
+        result[gid] = [
+            {"id": wid, **info[wid], "metres": len(hits[gid][wid]) * STEP} for wid in ways
+        ]
     with open(out_path, "w") as f:
         json.dump(result, f)
 

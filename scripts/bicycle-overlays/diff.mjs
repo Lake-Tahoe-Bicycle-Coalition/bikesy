@@ -12,9 +12,10 @@ to a different class.
 Usage: node scripts/bicycle-overlays/diff.mjs --before DIR --after DIR [options]
   --before DIR          class-I..IV.geojson as published or previously generated; features
                         need no OSM IDs (a snapshot of hand-maintained layers works)
-  --after DIR           a generate.mjs output directory
+  --after DIR           any directory of class-*.geojson (a generate.mjs or old pipeline output)
   --output FILE         write the changes as JSON
-  --extract FILE        the .osm/.osm.pbf the run used; lists OSM ways along removed stretches
+  --extract FILE        the .osm/.osm.pbf the run used; lists the OSM ways each change
+                        without OSM IDs runs along, longest first
   --python FILE         default: tool-local .venv/bin/python (needed with --extract)
   --tolerance METRES    default 20: lines closer than this count as the same stretch
   --min-length METRES   default 50: ignore shorter differences
@@ -256,7 +257,7 @@ export function diffLayers(before, after, { tolerance = 20, minLength = 50 } = {
 export function summarize(changes) {
   const summary = {};
   for (const c of changes) {
-    const klass = c.after ?? c.before;
+    const klass = c.type === 'changed' ? `${c.before}>${c.after}` : (c.after ?? c.before);
     const row = (summary[c.type] ??= {});
     const cell = (row[klass] ??= { count: 0, km: 0 });
     cell.count++;
@@ -328,10 +329,10 @@ async function main() {
   const after = await readLayers(values.after);
   const changes = diffLayers(before, after, { tolerance, minLength });
   if (values.extract) {
-    const removed = changes.filter((c) => !c.ways.length);
+    const missing = changes.filter((c) => !c.ways.length);
     const python = path.resolve(values.python ?? path.join(HERE, '.venv/bin/python'));
-    const found = await waysAlong(removed, path.resolve(values.extract), python);
-    for (const c of removed) c.ways = found[c.id] ?? [];
+    const found = await waysAlong(missing, path.resolve(values.extract), python);
+    for (const c of missing) c.ways = found[c.id] ?? [];
   }
   const summary = summarize(changes);
   if (values.output)
@@ -353,7 +354,7 @@ async function main() {
     );
   for (const type of ['added', 'removed', 'changed']) {
     const cells = Object.entries(summary[type] ?? {})
-      .map(([k, v]) => `${k} ${v.count} (${v.km} km)`)
+      .map(([k, v]) => `${k.replace('>', '→')} ${v.count} (${v.km} km)`)
       .join(', ');
     console.log(`${type.padEnd(8)} ${cells || 'none'}`);
   }

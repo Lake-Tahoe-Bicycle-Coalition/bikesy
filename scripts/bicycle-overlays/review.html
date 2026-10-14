@@ -535,7 +535,7 @@
         const parts = await Promise.all(
           c.ways.map(async (w) => {
             const info = await (await fetch(`/why/${w.id}`)).json();
-            const head = `<a href="https://www.openstreetmap.org/way/${w.id}" target="_blank" rel="noopener">w${w.id}</a> ${esc(w.name ?? '(unnamed)')} <span class="num">${esc(w.highway ?? '')}</span>`;
+            const head = `<a href="https://www.openstreetmap.org/way/${w.id}" target="_blank" rel="noopener">w${w.id}</a> ${esc(w.name ?? '(unnamed)')} <span class="num">${esc(w.highway ?? '')}${w.metres ? ` · ${w.metres} m along` : ''}</span>`;
             if (info.found === false)
               return `<div class="way">${head}<div class="fac">Not a candidate in this run: no bike tags the generator recognises.</div></div>`;
             const fac = info.facilities

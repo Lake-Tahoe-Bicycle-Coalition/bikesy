@@ -41,17 +41,18 @@ Use `--strict-geometry` to fail when a candidate way has missing nodes or degene
 Each run can be compared with the layers currently on the map, and only the changes you choose are applied. Nothing from OSM is applied unless you include it.
 
 ```sh
+# DATA is any directory outside the repo, e.g. DATA=~/bikesy-data/tahoe-2026-10-14
 # 1. Compare. --before is any directory of class-*.geojson: a snapshot of the live layers or an earlier result.
-node scripts/bicycle-overlays/diff.mjs --before build/bicycle-overlays/live --after build/bicycle-overlays/tahoe-2026-10-14 \
-  --extract tahoe.osm.pbf --output build/bicycle-overlays/changes.json
+node scripts/bicycle-overlays/diff.mjs --before $DATA/live --after $DATA/tahoe-2026-10-14 \
+  --extract tahoe.osm.pbf --output $DATA/changes.json
 # 2. Review in the browser; decisions save to the file as you go.
-node scripts/bicycle-overlays/review.mjs --changes build/bicycle-overlays/changes.json --decisions tahoe-decisions.json
+node scripts/bicycle-overlays/review.mjs --changes $DATA/changes.json --decisions tahoe-decisions.json
 # 3. Write the before layers plus the included changes.
-node scripts/bicycle-overlays/apply.mjs --changes build/bicycle-overlays/changes.json --decisions tahoe-decisions.json \
-  --output build/bicycle-overlays/tahoe-published-2026-10-14
+node scripts/bicycle-overlays/apply.mjs --changes $DATA/changes.json --decisions tahoe-decisions.json \
+  --output $DATA/tahoe-published-2026-10-14
 ```
 
-`diff.mjs` compares geometry every 10 m, so the before layers need no OSM IDs. A stretch is **added** or **removed** when nothing of the same class lies within 20 m on the other side, and **changed** when its old class is gone there and a different class has taken its place; a new facility beside one that still exists counts as added. Differences shorter than 50 m are ignored (`--tolerance`, `--min-length`). With `--extract`, removed stretches list the OSM ways that run along them. The review page shows each change on a map with its way IDs, and on request the tags and rule evidence behind it. `apply.mjs` starts from the before layers: an included addition is cut from its new way, an included removal is erased, and an included change does both; undecided and excluded changes leave the before layers untouched. Keep one decisions file per region and reuse it on later runs, so repeated changes keep their decision.
+`diff.mjs` compares geometry every 10 m, so the before layers need no OSM IDs. A stretch is **added** or **removed** when nothing of the same class lies within 20 m on the other side, and **changed** when its old class is gone there and a different class has taken its place; a new facility beside one that still exists counts as added. Differences shorter than 50 m are ignored (`--tolerance`, `--min-length`). With `--extract`, each change without OSM IDs lists the ways that run along at least 20% of it (or 150 m), longest first. The review page shows each change on a map with its way IDs, and on request the tags and rule evidence behind it. `apply.mjs` starts from the before layers: an included addition is cut from its new way, an included removal is erased, and an included change does both; undecided and excluded changes leave the before layers untouched. Keep one decisions file per region and reuse it on later runs, so repeated changes keep their decision.
 
 ## Inferred Class I and compatibility displays
 
