@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { applyChanges } from './apply.mjs';
+import { applyChanges, tally } from './apply.mjs';
 import { diffLayers } from './diff.mjs';
 
 const line = (lat, props = {}, [west, east] = [-120.0, -119.994]) => ({
@@ -84,4 +84,25 @@ test('removing the middle of a longer line keeps both ends', () => {
   assert.equal(kept.geometry.coordinates.length, 2);
   assert.deepEqual(kept.geometry.coordinates[0][0], [-120.0, 39.01]);
   assert.deepEqual(kept.geometry.coordinates[1].at(-1), [-119.988, 39.01]);
+});
+
+test('an exclude from an earlier run counts as undecided and is reported separately', () => {
+  const [a, b, c] = changes;
+  const decisions = {
+    [a.id]: { decision: 'exclude', run: '/old' },
+    [b.id]: { decision: 'exclude', run: '/new' },
+    [c.id]: { decision: 'exclude' }, // saved before `run` existed: this run
+  };
+  const t = tally(changes, decisions, '/new');
+  assert.equal(t.recurring_excluded, 1);
+  assert.equal(t.excluded, 2);
+  assert.equal(t.undecided, changes.length - 2);
+  const { included } = applyChanges(before, after, changes, {
+    ...decisions,
+    [a.id]: { decision: 'include', run: '/old' }, // includes carry over
+  });
+  assert.deepEqual(
+    included.map((x) => x.id),
+    [a.id],
+  );
 });

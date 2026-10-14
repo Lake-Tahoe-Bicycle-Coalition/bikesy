@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { cleanFix } from './decisions.mjs';
 import { readLayers } from './diff.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -102,6 +103,13 @@ async function main() {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'GET' && url.pathname === '/')
         return send(res, 200, page, 'text/html; charset=utf-8');
+      if (req.method === 'GET' && url.pathname === '/decisions.mjs')
+        return send(
+          res,
+          200,
+          await readFile(path.join(HERE, 'decisions.mjs'), 'utf8'),
+          'text/javascript; charset=utf-8',
+        );
       if (req.method === 'GET' && url.pathname === '/data') return send(res, 200, data);
       if (req.method === 'GET' && url.pathname === '/decisions')
         return send(res, 200, decisions);
@@ -111,19 +119,40 @@ async function main() {
       if (req.method === 'PUT' && url.pathname === '/decisions') {
         let body = '';
         for await (const chunk of req) body += chunk;
-        const { id, decision, note } = JSON.parse(body);
-        if (!diff.changes.some((c) => c.id === id))
-          return send(res, 404, { error: 'Unknown change' });
+        const { id, decision, note, osm_fix, confirm } = JSON.parse(body);
+        const change = diff.changes.find((c) => c.id === id);
+        if (!change) return send(res, 404, { error: 'Unknown change' });
         if (decision && !['include', 'exclude'].includes(decision))
           return send(res, 400, { error: 'Bad decision' });
+        let fix = decisions[id]?.osm_fix;
+        if (osm_fix === null) fix = undefined;
+        else if (osm_fix)
+          try {
+            fix = {
+              ...fix,
+              ...cleanFix(
+                osm_fix,
+                change.ways.map((w) => w.id),
+              ),
+            };
+          } catch (error) {
+            return send(res, 400, { error: error.message });
+          }
+        // `run` says which diff the decision was made on. Saving only a note or fix keeps it;
+        // a new or confirmed decision (even the same exclude again) records this diff.
+        const old = decisions[id];
         const next = {
-          ...decisions[id],
+          ...old,
           decision: decision ?? undefined,
-          note: note ?? decisions[id]?.note,
+          run:
+            decision && (confirm || decision !== old?.decision) ? diff.after : old?.run,
+          note: note ?? old?.note,
+          osm_fix: fix,
           at: new Date().toISOString(),
         };
-        if (!next.decision && !next.note) delete decisions[id];
-        else decisions[id] = next;
+        if (!decision) delete next.run;
+        if (!next.decision && !next.note && !next.osm_fix) delete decisions[id];
+        else decisions[id] = JSON.parse(JSON.stringify(next));
         await saveDecisions();
         return send(res, 200, decisions[id] ?? {});
       }

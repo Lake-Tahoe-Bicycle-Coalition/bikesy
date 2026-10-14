@@ -309,6 +309,50 @@
         min-height: 32px;
         resize: vertical;
       }
+      .old-note {
+        font-size: 12px;
+        color: var(--exclude);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        max-height: 6em;
+        overflow-y: auto;
+      }
+      .fix {
+        display: grid;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 6px 8px;
+      }
+      .fix input[type='text'] {
+        font: 12px var(--font-mono);
+        color: var(--fg);
+        background: var(--bg);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 4px 8px;
+        width: 100%;
+      }
+      .fix .ways {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        font: 12px var(--font-mono);
+      }
+      .fix .err {
+        color: var(--removed);
+        font-size: 12px;
+      }
+      #fixes summary {
+        font-size: 12px;
+      }
+      #fixes .fixrow {
+        font: 11px var(--font-mono);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        overflow-wrap: anywhere;
+      }
       .legend {
         display: flex;
         flex-wrap: wrap;
@@ -371,6 +415,7 @@
         <div class="paths" id="paths"></div>
         <div class="tally" id="tally"></div>
         <div class="row" id="statusFilter"></div>
+        <details id="fixes"></details>
         <div class="hint">
           <kbd>j</kbd>/<kbd>k</kbd> next/previous · <kbd>i</kbd> include ·
           <kbd>x</kbd> exclude · <kbd>u</kbd> undecide. Undecided and excluded changes are
@@ -398,6 +443,7 @@
         selected: null,
       };
       let DATA,
+        D, // decisions.mjs, shared with the server
         decisions = {};
       const css = (n) =>
         getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -422,13 +468,28 @@
         if (c.type === 'removed') return `${LABEL[c.before]} removed`;
         return `${LABEL[c.before]} → ${LABEL[c.after]}`;
       }
-      const status = (c) => decisions[c.id]?.decision ?? 'undecided';
+      // 'recurring': excluded on an earlier run and the change is still there, so ask again.
+      const status = (c) =>
+        D.isRecurring(decisions[c.id], DATA.changes.after)
+          ? 'recurring'
+          : (decisions[c.id]?.decision ?? 'undecided');
+      const fixTodo = (c) =>
+        decisions[c.id]?.osm_fix?.status === 'todo' &&
+        D.josmUrl(decisions[c.id].osm_fix) !== null;
+      const STATE = {
+        include: 'Included',
+        exclude: 'Excluded',
+        recurring: 'Excluded earlier — still in OSM',
+      };
+      const matches = (c, k) =>
+        k === 'all' ||
+        (k === 'fixtodo'
+          ? fixTodo(c)
+          : status(c) === k || (k === 'undecided' && status(c) === 'recurring'));
 
       function visible() {
         return DATA.changes.changes.filter(
-          (c) =>
-            state.types.has(c.type) &&
-            (state.status === 'all' || status(c) === state.status),
+          (c) => state.types.has(c.type) && matches(c, state.status),
         );
       }
 
@@ -437,7 +498,7 @@
         el.innerHTML = '';
         for (const [type, label] of Object.entries(TYPE)) {
           const all = DATA.changes.changes.filter((c) => c.type === type);
-          const done = all.filter((c) => status(c) !== 'undecided').length;
+          const done = all.filter((c) => !matches(c, 'undecided')).length;
           const b = document.createElement('button');
           b.className = `t-${type}`;
           b.setAttribute('aria-pressed', String(state.types.has(type)));
@@ -453,13 +514,16 @@
       const statusChips = {};
       for (const [k, label] of [
         ['undecided', 'Undecided'],
+        ['recurring', 'Excluded earlier'],
         ['include', 'Included'],
         ['exclude', 'Excluded'],
+        ['fixtodo', 'OSM fix to do'],
         ['all', 'All'],
       ]) {
         const b = document.createElement('button');
         b.className = 'chip';
         b.textContent = label;
+        b.dataset.label = label;
         b.setAttribute('aria-pressed', String(k === state.status));
         b.addEventListener('click', () => {
           state.status = k;
@@ -475,11 +539,11 @@
         const res = await fetch('/decisions', {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ id: c.id, decision }),
+          body: JSON.stringify({ id: c.id, decision, confirm: true }),
         });
         if (!res.ok) return toast('Could not save. Is review.mjs still running?');
         const saved = await res.json();
-        if (saved.decision || saved.note) decisions[c.id] = saved;
+        if (saved.decision || saved.note || saved.osm_fix) decisions[c.id] = saved;
         else delete decisions[c.id];
         toast(
           decision === 'include'
@@ -503,17 +567,91 @@
         } else render();
       }
 
-      async function saveNote(c, note) {
-        await fetch('/decisions', {
+      // Notes and fixes always resend the current decision (a PUT without one clears it).
+      async function put(c, extra) {
+        const res = await fetch('/decisions', {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({
             id: c.id,
             decision: decisions[c.id]?.decision ?? null,
-            note,
+            ...extra,
           }),
         });
-        decisions[c.id] = { ...(decisions[c.id] ?? {}), note };
+        if (!res.ok) return toast('Could not save. Is review.mjs still running?');
+        const saved = await res.json();
+        if (saved.decision || saved.note || saved.osm_fix) decisions[c.id] = saved;
+        else delete decisions[c.id];
+        return true;
+      }
+      const saveNote = (c, note) => put(c, { note });
+
+      const fixOf = (c) =>
+        decisions[c.id]?.osm_fix ?? {
+          tags: '',
+          ways: c.ways.slice(0, 1).map((w) => w.id),
+          status: 'todo',
+        };
+      async function saveFix(c, form) {
+        const tags = form.querySelector('.tags').value.trim();
+        const fix = {
+          tags,
+          ways: [...form.querySelectorAll('.ways input:checked')].map((x) =>
+            Number(x.value),
+          ),
+          status: form.querySelector('.fstatus').value,
+        };
+        if (!tags && !decisions[c.id]?.osm_fix) return;
+        if (await put(c, { osm_fix: tags ? fix : null })) {
+          toast(tags ? 'Fix saved' : 'Fix removed');
+          render();
+        }
+      }
+      function showFix(c, form) {
+        const fix = {
+          tags: form.querySelector('.tags').value,
+          ways: [...form.querySelectorAll('.ways input:checked')].map((x) =>
+            Number(x.value),
+          ),
+        };
+        const { tags, error } = D.parseTags(fix.tags);
+        form.querySelector('.err').textContent =
+          error ?? (tags.length && !fix.ways.length ? 'Choose at least one way' : '');
+        const josm = form.querySelector('.josm');
+        const url = D.josmUrl(fix);
+        josm.hidden = !url;
+        if (url) josm.href = url;
+      }
+
+      function renderFixes() {
+        const todo = DATA.changes.changes.filter(fixTodo);
+        const el = document.getElementById('fixes');
+        el.hidden = !todo.length;
+        el.innerHTML = `<summary>${todo.length} OSM fix${todo.length === 1 ? '' : 'es'} to do</summary>`;
+        for (const c of todo) {
+          const fix = decisions[c.id].osm_fix;
+          const row = document.createElement('div');
+          row.className = 'fixrow';
+          row.innerHTML = `<button class="linkish">${esc(c.name ?? c.ways[0]?.name ?? '(unnamed)')}</button> <span>${esc(fix.tags)}</span> <a href="${esc(D.josmUrl(fix))}">JOSM</a>`;
+          row.querySelector('button').addEventListener('click', () => {
+            state.status = 'all';
+            for (const [s, x] of Object.entries(statusChips))
+              x.setAttribute('aria-pressed', String(s === 'all'));
+            select(c.id);
+          });
+          row.querySelector('a').addEventListener('click', josmClick);
+          el.append(row);
+        }
+        for (const [k, b] of Object.entries(statusChips))
+          if (k === 'fixtodo') b.textContent = `${b.dataset.label} (${todo.length})`;
+      }
+      // JOSM remote control answers on localhost; without it the link opens in a tab and fails.
+      function josmClick(e) {
+        e.preventDefault();
+        fetch(e.currentTarget.href, { mode: 'no-cors' }).then(
+          () => toast('Sent to JOSM'),
+          () => toast('JOSM not reachable: start it with remote control enabled'),
+        );
       }
 
       async function copyIds(ids) {
@@ -555,6 +693,7 @@
 
       function render() {
         renderTally();
+        renderFixes();
         const list = document.getElementById('list');
         const items = visible();
         list.innerHTML = items.length
@@ -573,27 +712,40 @@
       <div class="decide">
         <button class="inc" aria-pressed="${s === 'include'}">Include</button>
         <button class="exc" aria-pressed="${s === 'exclude'}">Exclude</button>
-        <span class="state">${s === 'undecided' ? '' : s === 'include' ? 'Included' : 'Excluded'}</span>
-      </div>`;
+        <span class="state">${STATE[s] ?? ''}</span>
+      </div>${s === 'recurring' && decisions[c.id].note ? `<div class="old-note">${esc(decisions[c.id].note)}</div>` : ''}`;
           row.querySelector('.inc').addEventListener('click', (e) => {
             e.stopPropagation();
             decide(c, s === 'include' ? null : 'include');
           });
           row.querySelector('.exc').addEventListener('click', (e) => {
             e.stopPropagation();
-            decide(c, s === 'exclude' ? null : 'exclude');
+            decide(c, s === 'exclude' ? null : 'exclude'); // recurring: confirms it again
           });
           if (state.selected === c.id) {
             const more = document.createElement('div');
             more.className = 'more';
             const [lng, lat] = c.mid;
+            const fix = fixOf(c);
             more.innerHTML = `
         <div class="links">
           <a href="https://www.openstreetmap.org/#map=18/${lat.toFixed(5)}/${lng.toFixed(5)}" target="_blank" rel="noopener">OSM map</a>
           <a href="https://www.openstreetmap.org/edit?editor=id#map=19/${lat.toFixed(5)}/${lng.toFixed(5)}" target="_blank" rel="noopener">Edit in iD</a>
+          <a href="${esc(D.googleMapsUrl(c.coords))}" target="_blank" rel="noopener">Google Maps</a>
+          ${c.ways.map((w) => `<a href="https://www.openstreetmap.org/way/${w.id}" target="_blank" rel="noopener">OpenStreetMap w${w.id}</a>`).join('')}
           ${c.ways.length ? `<button class="linkish copy">Copy ${c.ways.length} way ID${c.ways.length === 1 ? '' : 's'}</button>` : ''}
         </div>
         <textarea id="note" placeholder="Note (optional)">${esc(decisions[c.id]?.note ?? '')}</textarea>
+        ${
+          c.ways.length
+            ? `<div class="fix">
+          <label>OSM fix tags <input type="text" class="tags" placeholder="surface=dirt -cycleway" value="${esc(fix.tags)}" /></label>
+          <div class="ways">${c.ways.map((w) => `<label><input type="checkbox" value="${w.id}"${fix.ways.includes(w.id) ? ' checked' : ''} />w${w.id}</label>`).join('')}</div>
+          <div class="row"><select class="fstatus"><option value="todo"${fix.status === 'todo' ? ' selected' : ''}>To do</option><option value="uploaded"${fix.status === 'uploaded' ? ' selected' : ''}>Uploaded</option></select>
+          <a class="josm" target="_blank" rel="noopener" hidden>Open in JOSM</a></div>
+          <div class="err" role="alert"></div></div>`
+            : ''
+        }
         <details><summary>Why?</summary><div class="why"></div></details>`;
             more.addEventListener('click', (e) => e.stopPropagation());
             more
@@ -602,6 +754,13 @@
             more
               .querySelector('textarea')
               .addEventListener('change', (e) => saveNote(c, e.target.value));
+            const form = more.querySelector('.fix');
+            if (form) {
+              showFix(c, form);
+              form.addEventListener('input', () => showFix(c, form));
+              form.addEventListener('change', () => saveFix(c, form));
+              form.querySelector('.josm').addEventListener('click', josmClick);
+            }
             const details = more.querySelector('details');
             details.addEventListener('toggle', () => {
               if (details.open) renderWhy(c, more.querySelector('.why'));
@@ -624,7 +783,12 @@
 
       // Keyboard triage.
       document.addEventListener('keydown', (e) => {
-        if (e.target.closest('textarea, input') || e.metaKey || e.ctrlKey || e.altKey)
+        if (
+          e.target.closest('textarea, input, select') ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.altKey
+        )
           return;
         const items = visible();
         const i = items.findIndex((c) => c.id === state.selected);
@@ -714,7 +878,7 @@
                 id: c.id,
                 type: c.type,
                 sel: c.id === state.selected,
-                decided: status(c) !== 'undecided',
+                decided: !matches(c, 'undecided'),
               },
             })),
         });
@@ -756,9 +920,10 @@
 
       async function load() {
         try {
-          [DATA, decisions] = await Promise.all([
+          [DATA, decisions, D] = await Promise.all([
             (await fetch('/data')).json(),
             (await fetch('/decisions')).json(),
+            import('/decisions.mjs'),
           ]);
         } catch (error) {
           const el = document.getElementById('error');

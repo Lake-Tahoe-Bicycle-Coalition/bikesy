@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
+import { isRecurring } from './decisions.mjs';
 import {
   CLASSES,
   cutLine,
@@ -18,7 +19,8 @@ Usage: node scripts/bicycle-overlays/apply.mjs --changes FILE --decisions FILE -
   --changes FILE    output of diff.mjs (it names the before and after directories)
   --decisions FILE  {"decisions": {"<change id>": {"decision": "include" | "exclude"}}}
   --output DIR      must not exist; receives class-*.geojson and applied.json
-Changes without a decision, or excluded, leave the before layers as they were.
+Changes without a decision, or excluded, leave the before layers as they were. An exclude made
+on an earlier diff whose change is back (OSM still unfixed) counts as undecided: recurring_excluded.
 `;
 
 // Samples from diff.mjs lie exactly on their own feature, so a 1 m match selects the same
@@ -44,6 +46,19 @@ const lineCollection = (coordsList) => ({
     },
   })),
 });
+
+// Excluded (decided on this diff), recurring excludes (back after an earlier exclude) and the rest.
+export function tally(changes, decisions, run) {
+  const recurring = changes.filter((c) => isRecurring(decisions[c.id], run)).length;
+  const excluded =
+    changes.filter((c) => decisions[c.id]?.decision === 'exclude').length - recurring;
+  const included = changes.filter((c) => decisions[c.id]?.decision === 'include').length;
+  return {
+    excluded,
+    recurring_excluded: recurring,
+    undecided: changes.length - included - excluded,
+  };
+}
 
 export function applyChanges(before, after, changes, decisions, { tolerance = 20 } = {}) {
   const project = projector([...Object.values(before), ...Object.values(after)]);
@@ -141,9 +156,7 @@ async function main() {
       path.join(output, `class-${klass}.geojson`),
       JSON.stringify(collection) + '\n',
     );
-  const excluded = diff.changes.filter(
-    (c) => decisions[c.id]?.decision === 'exclude',
-  ).length;
+  const counts = tally(diff.changes, decisions, diff.after);
   await writeFile(
     path.join(output, 'applied.json'),
     JSON.stringify(
@@ -163,15 +176,14 @@ async function main() {
             way_ids: ways.map((w) => w.id),
           }),
         ),
-        excluded,
-        undecided: diff.changes.length - included.length - excluded,
+        ...counts,
       },
       null,
       1,
     ) + '\n',
   );
   console.log(
-    `Applied ${included.length} of ${diff.changes.length} changes (${excluded} excluded, ${diff.changes.length - included.length - excluded} undecided) → ${output}`,
+    `Applied ${included.length} of ${diff.changes.length} changes (${counts.excluded} excluded, ${counts.undecided} undecided, of which ${counts.recurring_excluded} recurring excludes) → ${output}`,
   );
 }
 
