@@ -69,12 +69,15 @@ export function cleanFix(fix, wayIds) {
     throw new Error('Bad fix status');
   if (
     fix.ways !== undefined &&
-    !(Array.isArray(fix.ways) && fix.ways.every((id) => wayIds.includes(id)))
+    !(
+      Array.isArray(fix.ways) &&
+      fix.ways.every((id) => wayIds.some((w) => String(w) === String(id)))
+    )
   )
     throw new Error('Bad fix ways');
   return Object.fromEntries(
     ['tags', 'ways', 'status']
       .filter((k) => fix[k] !== undefined)
-      .map((k) => [k, fix[k]]),
+      .map((k) => [k, k === 'ways' ? fix.ways.map(Number) : fix[k]]),
   );
 }
