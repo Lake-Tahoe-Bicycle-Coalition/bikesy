@@ -98,8 +98,9 @@ test('ways_near.py keeps ways along the stretch and ranks them by coverage', asy
     const way = (id, refs, name) =>
       `<way id="${id}">${refs.map((r) => `<nd ref="${r}"/>`).join('')}<tag k="highway" v="residential"/><tag k="name" v="${name}"/></way>`;
     const xml = `<?xml version="1.0"?><osm version="0.6">
-${node(1, 0, 39)}${node(2, 400, 39)}${node(3, 800, 39)}${node(4, 600, 39)}${node(5, 600, 39.0005)}${node(6, 100, 39)}${node(7, 100, 39.0005)}
+${node(1, 0, 39)}${node(2, 400, 39)}${node(3, 800, 39)}${node(4, 600, 39)}${node(5, 600, 39.0005)}${node(6, 100, 39)}${node(7, 100, 39.0005)}${node(8, 405, 39)}${node(9, 470, 39)}
 ${way(10, [1, 2], 'Long A')}${way(11, [2, 3], 'Long B')}${way(12, [4, 5], 'Cross')}${way(13, [6, 7], 'Other cross')}
+${way(14, [8, 9], 'Short A')}
 </osm>`;
     const coords = Array.from({ length: 81 }, (_, i) => [-120 + (i * STEP) / kx, 39]);
     await writeFile(path.join(dir, 'x.osm'), xml);
@@ -119,11 +120,12 @@ ${way(10, [1, 2], 'Long A')}${way(11, [2, 3], 'Long B')}${way(12, [4, 5], 'Cross
     const ways = JSON.parse(await readFile(path.join(dir, 'out.json'), 'utf8')).s;
     assert.deepEqual(
       ways.map((w) => w.id),
-      [10, 11],
+      [10, 11, 14],
     );
     assert.ok(ways[0].metres >= 380 && ways[0].metres <= 460);
     assert.ok(ways[1].metres >= 380 && ways[1].metres <= 460);
     assert.equal(ways[0].name, 'Long A');
+    assert.ok(ways[2].metres >= 60 && ways[2].metres <= 130);
   } finally {
     await rm(dir, { recursive: true, force: true });
   }
