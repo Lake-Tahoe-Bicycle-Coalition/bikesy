@@ -10,7 +10,7 @@
     />
     <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
     <style>
-      /* Layout: change list (added / removed / changed, include or exclude each) beside a map of the selected stretch. */
+      /* Layout: change list (added / removed / changed, accept or reject each group) beside a map of the selected stretch. */
       :root {
         --bg: #f5f7f6;
         --panel: #ffffff;
@@ -21,8 +21,8 @@
         --added: #1e9e4a;
         --removed: #d23b3b;
         --changed: #d98c00;
-        --include: #1e7d3c;
-        --exclude: #8a3a3a;
+        --accept: #1e7d3c;
+        --reject: #8a3a3a;
         --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
         --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
       }
@@ -37,8 +37,8 @@
           --added: #4cc775;
           --removed: #f06b6b;
           --changed: #f0ad33;
-          --include: #4cc775;
-          --exclude: #e08787;
+          --accept: #4cc775;
+          --reject: #e08787;
           color-scheme: dark;
         }
       }
@@ -52,8 +52,8 @@
         --added: #4cc775;
         --removed: #f06b6b;
         --changed: #f0ad33;
-        --include: #4cc775;
-        --exclude: #e08787;
+        --accept: #4cc775;
+        --reject: #e08787;
         color-scheme: dark;
       }
       * {
@@ -138,6 +138,9 @@
       }
       .t-changed {
         --t: var(--changed);
+      }
+      .t-mixed {
+        --t: var(--muted);
       }
       .row {
         display: flex;
@@ -228,15 +231,45 @@
         padding: 3px 10px;
         cursor: pointer;
       }
-      .decide button.inc[aria-pressed='true'] {
-        background: var(--include);
-        border-color: var(--include);
+      .decide {
+        flex-wrap: wrap;
+      }
+      .decide button.acc[aria-pressed='true'] {
+        background: var(--accept);
+        border-color: var(--accept);
         color: #fff;
       }
-      .decide button.exc[aria-pressed='true'] {
-        background: var(--exclude);
-        border-color: var(--exclude);
+      .decide button.rej[aria-pressed='true'] {
+        background: var(--reject);
+        border-color: var(--reject);
         color: #fff;
+      }
+      .decide .state.mixed {
+        color: var(--fg);
+      }
+      .toggle {
+        justify-self: start;
+        font-size: 12px;
+      }
+      .members {
+        display: grid;
+        gap: 6px;
+        margin-top: 2px;
+      }
+      .member {
+        border-left: 3px solid var(--t);
+        padding: 4px 8px;
+        display: grid;
+        gap: 4px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .member .decide button {
+        font-size: 11px;
+        padding: 2px 7px;
+      }
+      .member.sel {
+        background: color-mix(in srgb, var(--t) 14%, transparent);
       }
       .decide .state {
         font-size: 11px;
@@ -311,7 +344,7 @@
       }
       .old-note {
         font-size: 12px;
-        color: var(--exclude);
+        color: var(--reject);
         white-space: pre-wrap;
         overflow-wrap: anywhere;
         max-height: 6em;
@@ -417,9 +450,10 @@
         <div class="row" id="statusFilter"></div>
         <details id="fixes"></details>
         <div class="hint">
-          <kbd>j</kbd>/<kbd>k</kbd> next/previous · <kbd>i</kbd> include ·
-          <kbd>x</kbd> exclude · <kbd>u</kbd> undecide. Undecided and excluded changes are
-          not applied.
+          <kbd>j</kbd>/<kbd>k</kbd> next/previous · <kbd>a</kbd> accept ·
+          <kbd>o</kbd> reject: fix in OSM · <kbd>g</kbd> reject: fix in the generator ·
+          <kbd>u</kbd> undecide. Only accepted changes are applied; connected changes are
+          grouped and decided together.
         </div>
       </header>
       <div id="error" hidden></div>
@@ -440,9 +474,13 @@
       const state = {
         types: new Set(Object.keys(TYPE)),
         status: 'undecided',
-        selected: null,
+        selected: null, // group id
+        sub: null, // change id of a member picked inside an expanded group
+        open: new Set(), // expanded group ids
       };
-      let DATA,
+      let GROUPS = [],
+        GROUP_OF = new Map(), // change id or group id -> group
+        DATA,
         D, // decisions.mjs, shared with the server
         decisions = {};
       const css = (n) =>
@@ -468,28 +506,91 @@
         if (c.type === 'removed') return `${LABEL[c.before]} removed`;
         return `${LABEL[c.before]} → ${LABEL[c.after]}`;
       }
-      // 'recurring': excluded on an earlier run and the change is still there, so ask again.
-      const status = (c) =>
-        D.isRecurring(decisions[c.id], DATA.changes.after)
-          ? 'recurring'
-          : (decisions[c.id]?.decision ?? 'undecided');
-      const fixTodo = (c) =>
-        decisions[c.id]?.osm_fix?.status === 'todo' &&
-        D.josmUrl(decisions[c.id].osm_fix) !== null;
-      const STATE = {
-        include: 'Included',
-        exclude: 'Excluded',
-        recurring: 'Excluded earlier — still in OSM',
+      const short = (c) =>
+        c.type === 'added'
+          ? `${c.after} added`
+          : c.type === 'removed'
+            ? `${c.before} removed`
+            : `${c.before}→${c.after}`;
+      // "4 removed II, 3 II→III": most common first.
+      function summary(g) {
+        const counts = new Map();
+        for (const c of g.members) counts.set(short(c), (counts.get(short(c)) ?? 0) + 1);
+        return [...counts]
+          .sort((a, b) => b[1] - a[1])
+          .map(([k, n]) => `${n} ${k.replace(/^(\w+) (added|removed)$/, '$2 $1')}`)
+          .join(', ');
+      }
+      const nameOf = (g) =>
+        g.name ??
+        g.members.flatMap((c) => c.ways).find((w) => w.name)?.name ??
+        '(unnamed)';
+
+      // Per change: undecided | recurring (rejected earlier, still present) | accept | reject:osm
+      // | reject:generator.
+      const status = (c) => {
+        const d = decisions[c.id];
+        if (D.isRecurring(d, DATA.changes.after)) return 'recurring';
+        return d?.decision === 'reject'
+          ? `reject:${d.reason}`
+          : (d?.decision ?? 'undecided');
       };
-      const matches = (c, k) =>
+      const isOpen = (c) => ['undecided', 'recurring'].includes(status(c));
+      const REASON = { osm: 'OSM', generator: 'the generator' };
+      const STATE = {
+        accept: 'Accepted',
+        'reject:osm': 'Rejected: fix in OSM',
+        'reject:generator': 'Rejected: fix in the generator',
+        recurring: 'Rejected earlier, still present',
+        undecided: 'Undecided',
+      };
+      const stateText = (c) =>
+        status(c) === 'recurring'
+          ? `Rejected earlier (fix in ${REASON[decisions[c.id].reason]}) — still present`
+          : STATE[status(c)];
+      // One state for a group when its members agree, else 'mixed'.
+      function groupState(g) {
+        const all = new Set(g.members.map(status));
+        return all.size === 1 ? [...all][0] : 'mixed';
+      }
+      function groupText(g) {
+        const s = groupState(g);
+        if (s === 'recurring') {
+          const reasons = new Set(g.members.map((c) => decisions[c.id].reason));
+          return `Rejected earlier (fix in ${[...reasons].map((r) => REASON[r]).join(' / ')}) — still present`;
+        }
+        if (s !== 'mixed') return STATE[s];
+        const n = {};
+        for (const c of g.members) n[status(c)] = (n[status(c)] ?? 0) + 1;
+        return `Mixed: ${Object.entries(n)
+          .map(
+            ([k, v]) =>
+              `${v} ${STATE[k].replace(/^R/, 'r').replace(/^A/, 'a').replace(/^U/, 'u')}`,
+          )
+          .join(', ')}`;
+      }
+      const osmMembers = (g) =>
+        g.members.filter((c) => decisions[c.id]?.reason === 'osm');
+      const fixTodo = (c) =>
+        decisions[c.id]?.reason === 'osm' &&
+        decisions[c.id].osm_fix?.status === 'todo' &&
+        D.josmUrl(decisions[c.id].osm_fix) !== null;
+      const matches = (g, k) =>
         k === 'all' ||
-        (k === 'fixtodo'
-          ? fixTodo(c)
-          : status(c) === k || (k === 'undecided' && status(c) === 'recurring'));
+        (k === 'fixtodo' && g.members.some(fixTodo)) ||
+        (k === 'undecided' && g.members.some(isOpen)) ||
+        (k === 'recurring' && g.members.some((c) => status(c) === 'recurring')) ||
+        (k === 'accept' &&
+          !g.members.some(isOpen) &&
+          g.members.some((c) => status(c) === 'accept')) ||
+        (k === 'reject' &&
+          !g.members.some(isOpen) &&
+          g.members.some((c) => status(c).startsWith('reject')));
 
       function visible() {
-        return DATA.changes.changes.filter(
-          (c) => state.types.has(c.type) && matches(c, state.status),
+        return GROUPS.filter(
+          (g) =>
+            g.members.some((c) => state.types.has(c.type)) && matches(g, state.status),
         );
       }
 
@@ -498,7 +599,7 @@
         el.innerHTML = '';
         for (const [type, label] of Object.entries(TYPE)) {
           const all = DATA.changes.changes.filter((c) => c.type === type);
-          const done = all.filter((c) => !matches(c, 'undecided')).length;
+          const done = all.filter((c) => !isOpen(c)).length;
           const b = document.createElement('button');
           b.className = `t-${type}`;
           b.setAttribute('aria-pressed', String(state.types.has(type)));
@@ -514,9 +615,9 @@
       const statusChips = {};
       for (const [k, label] of [
         ['undecided', 'Undecided'],
-        ['recurring', 'Excluded earlier'],
-        ['include', 'Included'],
-        ['exclude', 'Excluded'],
+        ['recurring', 'Rejected earlier'],
+        ['accept', 'Accepted'],
+        ['reject', 'Rejected'],
         ['fixtodo', 'OSM fix to do'],
         ['all', 'All'],
       ]) {
@@ -535,85 +636,75 @@
         document.getElementById('statusFilter').append(b);
       }
 
-      async function decide(c, decision) {
+      const store = (saved) => {
+        for (const [id, d] of Object.entries(saved))
+          if (d.decision || d.note || d.osm_fix) decisions[id] = d;
+          else delete decisions[id];
+      };
+      // One request for all the changes (a group's members, or one change); null clears.
+      async function save(ms, body) {
         const res = await fetch('/decisions', {
           method: 'PUT',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ id: c.id, decision, confirm: true }),
+          body: JSON.stringify({ ids: ms.map((c) => c.id), ...body }),
         });
-        if (!res.ok) return toast('Could not save. Is review.mjs still running?');
-        const saved = await res.json();
-        if (saved.decision || saved.note || saved.osm_fix) decisions[c.id] = saved;
-        else delete decisions[c.id];
-        toast(
-          decision === 'include'
-            ? 'Included'
-            : decision === 'exclude'
-              ? 'Excluded'
-              : 'Undecided',
-        );
-        // Stay in place in the list: move to the next undecided change when filtering by Undecided.
+        if (!res.ok) {
+          const error = (await res.json().catch(() => null))?.error;
+          return toast(error ?? 'Could not save. Is review.mjs still running?');
+        }
+        store(await res.json());
+        return true;
+      }
+
+      // key: 'accept' | 'reject:osm' | 'reject:generator' | null (undecide).
+      async function decide(g, ms, key) {
+        const [decision, reason] = key ? key.split(':') : [null];
+        if (!(await save(ms, { decision, reason, confirm: true }))) return;
+        toast(key ? STATE[key] : 'Undecided');
+        // Stay in place in the list: move to the next undecided group when filtering by Undecided.
         const list = visible();
-        if (state.status === 'undecided' && decision) {
+        if (state.status === 'undecided' && key && !g.members.some(isOpen)) {
+          const at = (x) => GROUPS.indexOf(x);
           const next =
-            list.find(
-              (x) =>
-                x.id !== c.id &&
-                DATA.changes.changes.indexOf(x) > DATA.changes.changes.indexOf(c),
-            ) ?? list.find((x) => x.id !== c.id);
+            list.find((x) => x !== g && at(x) > at(g)) ?? list.find((x) => x !== g);
           state.selected = next?.id ?? null;
+          state.sub = null;
           render();
           if (next) zoomTo(next);
         } else render();
       }
+      const saveNote = (g, note) => save(g.members, { note });
 
-      // Notes and fixes always resend the current decision (a PUT without one clears it).
-      async function put(c, extra) {
-        const res = await fetch('/decisions', {
-          method: 'PUT',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            id: c.id,
-            decision: decisions[c.id]?.decision ?? null,
-            ...extra,
-          }),
-        });
-        if (!res.ok) return toast('Could not save. Is review.mjs still running?');
-        const saved = await res.json();
-        if (saved.decision || saved.note || saved.osm_fix) decisions[c.id] = saved;
-        else delete decisions[c.id];
-        return true;
-      }
-      const saveNote = (c, note) => put(c, { note });
-
-      const fixOf = (c) =>
-        decisions[c.id]?.osm_fix ?? {
-          tags: '',
-          ways: c.ways.slice(0, 1).map((w) => w.id),
-          status: 'todo',
-        };
-      async function saveFix(c, form) {
-        const tags = form.querySelector('.tags').value.trim();
-        const fix = {
-          tags,
-          ways: [...form.querySelectorAll('.ways input:checked')].map((x) =>
-            Number(x.value),
-          ),
-          status: form.querySelector('.fstatus').value,
-        };
-        if (!tags && !decisions[c.id]?.osm_fix) return;
-        if (await put(c, { osm_fix: tags ? fix : null })) {
-          toast(tags ? 'Fix saved' : 'Fix removed');
+      const fixOf = (g) => {
+        const ms = osmMembers(g);
+        const fixes = ms.map((c) => decisions[c.id].osm_fix).filter(Boolean);
+        const ways = D.unionWays(ms);
+        return fixes.length
+          ? {
+              tags: fixes.find((f) => f.tags)?.tags ?? '',
+              ways: [...new Set(fixes.flatMap((f) => f.ways ?? []).map(Number))],
+              status: fixes.some((f) => f.status === 'todo') ? 'todo' : fixes[0].status,
+            }
+          : { tags: '', ways: ways.slice(0, 1).map((w) => w.id), status: 'todo' };
+      };
+      const formFix = (form) => ({
+        tags: form.querySelector('.tags').value.trim(),
+        ways: [...form.querySelectorAll('.ways input:checked')].map((x) =>
+          Number(x.value),
+        ),
+        status: form.querySelector('.fstatus').value,
+      });
+      async function saveFix(g, form) {
+        const fix = formFix(form);
+        const ms = osmMembers(g);
+        if (!fix.tags && !ms.some((c) => decisions[c.id].osm_fix)) return;
+        if (await save(ms, { osm_fix: fix.tags ? fix : null })) {
+          toast(fix.tags ? 'Fix saved' : 'Fix removed');
           render();
         }
       }
-      function showFix(c, form) {
-        const fix = {
-          tags: form.querySelector('.tags').value,
-          ways: [...form.querySelectorAll('.ways input:checked')].map((x) =>
-            Number(x.value),
-          ),
-        };
+      function showFix(form) {
+        const fix = formFix(form);
         const { tags, error } = D.parseTags(fix.tags);
         form.querySelector('.err').textContent =
           error ?? (tags.length && !fix.ways.length ? 'Choose at least one way' : '');
@@ -623,27 +714,38 @@
         if (url) josm.href = url;
       }
 
+      // Fixes still to do, one line per group and tag set, with the union of the ways.
       function renderFixes() {
-        const todo = DATA.changes.changes.filter(fixTodo);
+        const rows = [];
+        for (const g of GROUPS) {
+          const byTags = new Map();
+          for (const c of g.members.filter(fixTodo)) {
+            const fix = decisions[c.id].osm_fix;
+            const row = byTags.get(fix.tags) ?? { g, tags: fix.tags, ways: new Set() };
+            fix.ways.forEach((w) => row.ways.add(w));
+            byTags.set(fix.tags, row);
+          }
+          rows.push(...byTags.values());
+        }
         const el = document.getElementById('fixes');
-        el.hidden = !todo.length;
-        el.innerHTML = `<summary>${todo.length} OSM fix${todo.length === 1 ? '' : 'es'} to do</summary>`;
-        for (const c of todo) {
-          const fix = decisions[c.id].osm_fix;
+        el.hidden = !rows.length;
+        el.innerHTML = `<summary>${rows.length} OSM fix${rows.length === 1 ? '' : 'es'} to do</summary>`;
+        for (const { g, tags, ways } of rows) {
           const row = document.createElement('div');
           row.className = 'fixrow';
-          row.innerHTML = `<button class="linkish">${esc(c.name ?? c.ways[0]?.name ?? '(unnamed)')}</button> <span>${esc(fix.tags)}</span> <a href="${esc(D.josmUrl(fix))}">JOSM</a>`;
+          row.innerHTML = `<button class="linkish">${esc(nameOf(g))}</button> <span>${esc(tags)}</span> <a href="${esc(D.josmUrl({ tags, ways: [...ways] }))}">JOSM</a>`;
           row.querySelector('button').addEventListener('click', () => {
             state.status = 'all';
             for (const [s, x] of Object.entries(statusChips))
               x.setAttribute('aria-pressed', String(s === 'all'));
-            select(c.id);
+            select(g.id);
           });
           row.querySelector('a').addEventListener('click', josmClick);
           el.append(row);
         }
         for (const [k, b] of Object.entries(statusChips))
-          if (k === 'fixtodo') b.textContent = `${b.dataset.label} (${todo.length})`;
+          if (k === 'fixtodo')
+            b.textContent = `${b.dataset.label} (${GROUPS.filter((g) => g.members.some(fixTodo)).length})`;
       }
       // JOSM remote control answers on localhost; without it the link opens in a tab and fails.
       function josmClick(e) {
@@ -664,14 +766,14 @@
         }
       }
 
-      async function renderWhy(c, el) {
-        if (!c.ways.length) {
+      async function renderWhy(ways, el) {
+        if (!ways.length) {
           el.innerHTML = '<div class="hint">No OSM ways found along this stretch.</div>';
           return;
         }
         el.innerHTML = '<div class="hint">Loading…</div>';
         const parts = await Promise.all(
-          c.ways.map(async (w) => {
+          ways.map(async (w) => {
             const info = await (await fetch(`/why/${w.id}`)).json();
             const head = `<a href="https://www.openstreetmap.org/way/${w.id}" target="_blank" rel="noopener">w${w.id}</a> ${esc(w.name ?? '(unnamed)')} <span class="num">${esc(w.highway ?? '')}${w.metres ? ` · ${w.metres} m along` : ''}</span>`;
             if (info.found === false)
@@ -691,6 +793,27 @@
         el.innerHTML = parts.join('');
       }
 
+      const BUTTONS = [
+        ['accept', 'acc', 'Accept'],
+        ['reject:osm', 'rej', 'Reject: fix in OSM'],
+        ['reject:generator', 'rej', 'Reject: fix in the generator'],
+      ];
+      // Accept / reject buttons for some changes; `current` is their shared state or 'mixed'.
+      function decideButtons(g, ms, current) {
+        const el = document.createElement('div');
+        el.className = 'decide';
+        el.innerHTML = BUTTONS.map(
+          ([key, cls, label]) =>
+            `<button class="${cls}" data-key="${key}" aria-pressed="${current === key}">${label}</button>`,
+        ).join('');
+        for (const b of el.querySelectorAll('button'))
+          b.addEventListener('click', (e) => {
+            e.stopPropagation();
+            decide(g, ms, current === b.dataset.key ? null : b.dataset.key); // recurring: confirms it again
+          });
+        return el;
+      }
+
       function render() {
         renderTally();
         renderFixes();
@@ -699,48 +822,98 @@
         list.innerHTML = items.length
           ? ''
           : '<div class="empty">No changes match. Choose another status, or turn a type back on.</div>';
-        for (const c of items) {
-          const s = status(c);
+        for (const g of items) {
+          const s = groupState(g);
+          const many = g.members.length > 1;
+          const types = new Set(g.members.map((c) => c.type));
           const row = document.createElement('div');
-          row.className = `item t-${c.type}${state.selected === c.id ? ' sel' : ''}`;
+          row.className = `item t-${types.size === 1 ? [...types][0] : 'mixed'}${state.selected === g.id ? ' sel' : ''}`;
           row.setAttribute('role', 'listitem');
           row.tabIndex = 0;
-          row.dataset.id = c.id;
+          row.dataset.id = g.id;
+          const notes = [
+            ...new Set(
+              g.members
+                .filter((c) => status(c) === 'recurring' && decisions[c.id].note)
+                .map((c) => decisions[c.id].note),
+            ),
+          ];
           row.innerHTML = `
-      <div class="top"><span class="what">${headline(c)}</span><span class="num">${km(c.metres)}</span></div>
-      <div class="sub">${esc(c.name ?? (c.ways[0]?.name || '(unnamed)'))}</div>
-      <div class="decide">
-        <button class="inc" aria-pressed="${s === 'include'}">Include</button>
-        <button class="exc" aria-pressed="${s === 'exclude'}">Exclude</button>
-        <span class="state">${STATE[s] ?? ''}</span>
-      </div>${s === 'recurring' && decisions[c.id].note ? `<div class="old-note">${esc(decisions[c.id].note)}</div>` : ''}`;
-          row.querySelector('.inc').addEventListener('click', (e) => {
-            e.stopPropagation();
-            decide(c, s === 'include' ? null : 'include');
-          });
-          row.querySelector('.exc').addEventListener('click', (e) => {
-            e.stopPropagation();
-            decide(c, s === 'exclude' ? null : 'exclude'); // recurring: confirms it again
-          });
-          if (state.selected === c.id) {
+      <div class="top"><span class="what">${many ? esc(nameOf(g)) : headline(g.members[0])}</span><span class="num">${km(g.metres)}</span></div>
+      <div class="sub">${many ? `${esc(summary(g))} · ${g.members.length} changes` : esc(nameOf(g))}</div>`;
+          const buttons = decideButtons(g, g.members, s);
+          buttons.insertAdjacentHTML(
+            'beforeend',
+            `<span class="state${s === 'mixed' ? ' mixed' : ''}">${esc(groupText(g))}</span>`,
+          );
+          row.append(buttons);
+          for (const note of notes)
+            row.insertAdjacentHTML(
+              'beforeend',
+              `<div class="old-note">${esc(note)}</div>`,
+            );
+          if (many) {
+            const open = state.open.has(g.id);
+            const toggle = document.createElement('button');
+            toggle.className = 'linkish toggle';
+            toggle.setAttribute('aria-expanded', String(open));
+            toggle.textContent = `${open ? '▾' : '▸'} ${open ? 'Hide' : 'Show'} ${g.members.length} changes`;
+            toggle.addEventListener('click', (e) => {
+              e.stopPropagation();
+              open ? state.open.delete(g.id) : state.open.add(g.id);
+              if (open && g.members.some((c) => c.id === state.sub)) state.sub = null;
+              render();
+            });
+            row.append(toggle);
+            if (open) {
+              const members = document.createElement('div');
+              members.className = 'members';
+              for (const c of g.members) {
+                const m = document.createElement('div');
+                m.className = `member t-${c.type}${state.sub === c.id ? ' sel' : ''}`;
+                m.innerHTML = `<div class="top"><span>${headline(c)}</span><span class="num">${km(c.metres)}</span></div>`;
+                const b = decideButtons(g, [c], status(c));
+                b.insertAdjacentHTML(
+                  'beforeend',
+                  `<span class="state">${esc(stateText(c))}</span>`,
+                );
+                m.append(b);
+                m.addEventListener('click', (e) => {
+                  e.stopPropagation();
+                  state.selected = g.id;
+                  state.sub = c.id;
+                  render();
+                  zoomTo(c);
+                });
+                members.append(m);
+              }
+              row.append(members);
+            }
+          }
+          if (state.selected === g.id) {
             const more = document.createElement('div');
             more.className = 'more';
-            const [lng, lat] = c.mid;
-            const fix = fixOf(c);
+            const [w, south, e, n] = g.bbox;
+            const [lng, lat] = [(w + e) / 2, (south + n) / 2];
+            const ways = D.unionWays(g.members);
+            const ms = osmMembers(g);
+            const fixWays = D.unionWays(ms);
+            const fix = fixOf(g);
+            const noteSet = new Set(g.members.map((c) => decisions[c.id]?.note ?? ''));
             more.innerHTML = `
         <div class="links">
           <a href="https://www.openstreetmap.org/#map=18/${lat.toFixed(5)}/${lng.toFixed(5)}" target="_blank" rel="noopener">OSM map</a>
           <a href="https://www.openstreetmap.org/edit?editor=id#map=19/${lat.toFixed(5)}/${lng.toFixed(5)}" target="_blank" rel="noopener">Edit in iD</a>
-          <a href="${esc(D.googleMapsUrl(c.coords))}" target="_blank" rel="noopener">Google Maps</a>
-          ${c.ways.map((w) => `<a href="https://www.openstreetmap.org/way/${w.id}" target="_blank" rel="noopener">OpenStreetMap w${w.id}</a>`).join('')}
-          ${c.ways.length ? `<button class="linkish copy">Copy ${c.ways.length} way ID${c.ways.length === 1 ? '' : 's'}</button>` : ''}
+          <a href="${esc(D.googleMapsUrl(g.coords))}" target="_blank" rel="noopener">Google Maps</a>
+          ${ways.map((x) => `<a href="https://www.openstreetmap.org/way/${x.id}" target="_blank" rel="noopener">OpenStreetMap w${x.id}</a>`).join('')}
+          ${ways.length ? `<button class="linkish copy">Copy ${ways.length} way ID${ways.length === 1 ? '' : 's'}</button>` : ''}
         </div>
-        <textarea id="note" placeholder="Note (optional)">${esc(decisions[c.id]?.note ?? '')}</textarea>
+        <textarea id="note" placeholder="${noteSet.size > 1 ? 'Members have different notes; typing replaces them' : 'Note (optional): for a generator reject, describe the rule fix'}">${noteSet.size > 1 ? '' : esc([...noteSet][0])}</textarea>
         ${
-          c.ways.length
+          ms.length && fixWays.length
             ? `<div class="fix">
           <label>OSM fix tags <input type="text" class="tags" placeholder="surface=dirt -cycleway" value="${esc(fix.tags)}" /></label>
-          <div class="ways">${c.ways.map((w) => `<label><input type="checkbox" value="${w.id}"${fix.ways.includes(w.id) ? ' checked' : ''} />w${w.id}</label>`).join('')}</div>
+          <div class="ways">${fixWays.map((x) => `<label><input type="checkbox" value="${x.id}"${fix.ways.includes(x.id) ? ' checked' : ''} />w${x.id}</label>`).join('')}</div>
           <div class="row"><select class="fstatus"><option value="todo"${fix.status === 'todo' ? ' selected' : ''}>To do</option><option value="uploaded"${fix.status === 'uploaded' ? ' selected' : ''}>Uploaded</option></select>
           <a class="josm" target="_blank" rel="noopener" hidden>Open in JOSM</a></div>
           <div class="err" role="alert"></div></div>`
@@ -750,34 +923,36 @@
             more.addEventListener('click', (e) => e.stopPropagation());
             more
               .querySelector('.copy')
-              ?.addEventListener('click', () => copyIds(c.ways.map((w) => w.id)));
+              ?.addEventListener('click', () => copyIds(ways.map((x) => x.id)));
             more
               .querySelector('textarea')
-              .addEventListener('change', (e) => saveNote(c, e.target.value));
+              .addEventListener('change', (e) => saveNote(g, e.target.value));
             const form = more.querySelector('.fix');
             if (form) {
-              showFix(c, form);
-              form.addEventListener('input', () => showFix(c, form));
-              form.addEventListener('change', () => saveFix(c, form));
+              showFix(form);
+              form.addEventListener('input', () => showFix(form));
+              form.addEventListener('change', () => saveFix(g, form));
               form.querySelector('.josm').addEventListener('click', josmClick);
             }
             const details = more.querySelector('details');
             details.addEventListener('toggle', () => {
-              if (details.open) renderWhy(c, more.querySelector('.why'));
+              if (details.open) renderWhy(ways, more.querySelector('.why'));
             });
             row.append(more);
           }
-          row.addEventListener('click', () => select(c.id));
+          row.addEventListener('click', () => select(g.id));
           list.append(row);
         }
         updateChangeLayer();
       }
 
+      // id: a group's id, or any change in it.
       function select(id) {
-        state.selected = id;
+        const g = GROUP_OF.get(id);
+        state.selected = g.id;
+        state.sub = null;
         render();
-        const c = DATA.changes.changes.find((x) => x.id === id);
-        if (c) zoomTo(c);
+        zoomTo(g);
         document.querySelector('.item.sel')?.scrollIntoView({ block: 'nearest' });
       }
 
@@ -791,17 +966,17 @@
         )
           return;
         const items = visible();
-        const i = items.findIndex((c) => c.id === state.selected);
+        const i = items.findIndex((g) => g.id === state.selected);
         const current = items[i];
+        const keys = { a: 'accept', o: 'reject:osm', g: 'reject:generator', u: null };
         if (e.key === 'j' || e.key === 'k') {
           const next =
             items[
               Math.max(0, Math.min(items.length - 1, i + (e.key === 'j' ? 1 : -1)))
             ] ?? items[0];
           if (next) select(next.id);
-        } else if (current && e.key === 'i') decide(current, 'include');
-        else if (current && e.key === 'x') decide(current, 'exclude');
-        else if (current && e.key === 'u') decide(current, null);
+        } else if (current && e.key in keys)
+          decide(current, current.members, keys[e.key]);
       });
 
       // ---- Map.
@@ -849,11 +1024,14 @@
       map.addControl(new maplibregl.NavigationControl(), 'top-right');
       map.addControl(new maplibregl.ScaleControl({ unit: 'imperial' }), 'bottom-right');
 
+      // A group (its bounding box) or a single change.
       const zoomTo = (c) => {
-        const b = c.coords.reduce(
-          (bb, p) => bb.extend(p),
-          new maplibregl.LngLatBounds(c.coords[0], c.coords[0]),
-        );
+        const b = c.bbox
+          ? new maplibregl.LngLatBounds([c.bbox[0], c.bbox[1]], [c.bbox[2], c.bbox[3]])
+          : c.coords.reduce(
+              (bb, p) => bb.extend(p),
+              new maplibregl.LngLatBounds(c.coords[0], c.coords[0]),
+            );
         map.fitBounds(b, {
           padding: 90,
           maxZoom: 17,
@@ -877,8 +1055,9 @@
               properties: {
                 id: c.id,
                 type: c.type,
-                sel: c.id === state.selected,
-                decided: !matches(c, 'undecided'),
+                sel: GROUP_OF.get(c.id).id === state.selected,
+                sub: c.id === state.sub,
+                decided: !isOpen(c),
               },
             })),
         });
@@ -933,6 +1112,11 @@
         }
         document.getElementById('paths').textContent =
           `before ${DATA.changes.before}\nafter ${DATA.changes.after}`;
+        GROUPS = D.groupChanges(DATA.changes.changes, DATA.changes.tolerance_m ?? 20);
+        for (const g of GROUPS) {
+          GROUP_OF.set(g.id, g);
+          for (const c of g.members) GROUP_OF.set(c.id, g);
+        }
         state.selected = visible()[0]?.id ?? null;
         render();
         const onLoad = () => {
@@ -987,7 +1171,7 @@
                 css('--removed'),
                 css('--changed'),
               ],
-              'line-width': ['case', ['get', 'sel'], 10, 6],
+              'line-width': ['case', ['get', 'sub'], 14, ['get', 'sel'], 10, 6],
               'line-opacity': [
                 'case',
                 ['get', 'sel'],
@@ -1017,7 +1201,7 @@
                 { padding: 40, duration: 0 },
               );
           }
-          const first = DATA.changes.changes.find((c) => c.id === state.selected);
+          const first = GROUP_OF.get(state.selected);
           if (first) zoomTo(first);
         };
         map.loaded() ? onLoad() : map.on('load', onLoad);
