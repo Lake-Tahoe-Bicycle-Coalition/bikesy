@@ -795,8 +795,8 @@
 
       const BUTTONS = [
         ['accept', 'acc', 'Accept'],
-        ['reject:osm', 'rej', 'Reject: fix in OSM'],
-        ['reject:generator', 'rej', 'Reject: fix in the generator'],
+        ['reject:osm', 'rej', 'Fix in OSM'],
+        ['reject:generator', 'rej', 'Fix in generator'],
       ];
       // Accept / reject buttons for some changes; `current` is their shared state or 'mixed'.
       function decideButtons(g, ms, current) {
@@ -804,7 +804,7 @@
         el.className = 'decide';
         el.innerHTML = BUTTONS.map(
           ([key, cls, label]) =>
-            `<button class="${cls}" data-key="${key}" aria-pressed="${current === key}">${label}</button>`,
+            `${key === 'reject:osm' ? '<span class="hint">Reject:</span>' : ''}<button class="${cls}" data-key="${key}" aria-pressed="${current === key}">${label}</button>`,
         ).join('');
         for (const b of el.querySelectorAll('button'))
           b.addEventListener('click', (e) => {
@@ -1112,7 +1112,11 @@
         }
         document.getElementById('paths').textContent =
           `before ${DATA.changes.before}\nafter ${DATA.changes.after}`;
-        GROUPS = D.groupChanges(DATA.changes.changes, DATA.changes.tolerance_m ?? 20);
+        GROUPS = D.groupChanges(
+          DATA.changes.changes,
+          DATA.changes.tolerance_m ?? 20,
+          DATA.changes.group_gap_m,
+        );
         for (const g of GROUPS) {
           GROUP_OF.set(g.id, g);
           for (const c of g.members) GROUP_OF.set(c.id, g);

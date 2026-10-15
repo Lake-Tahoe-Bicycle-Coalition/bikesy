@@ -65,9 +65,9 @@ const ids = (groups) => groups.map((g) => g.members.map((c) => c.id));
 test('changes whose endpoints meet group transitively, even across types', () => {
   const chain = [
     piece('a', 'Pioneer Trail', [0, 0], [100, 0]),
-    piece('b', 'Pioneer Trail', [110, 0], [300, 0], { type: 'changed' }), // 10 m gap
-    piece('c', 'Pioneer Trail', [315, 0], [500, 0]), // chains through b only
-    piece('far', 'Pioneer Trail', [800, 0], [900, 0]),
+    piece('b', 'Pioneer Trail', [110, 0], [300, 0], { type: 'changed' }),
+    piece('c', 'Pioneer Trail', [315, 0], [500, 0]),
+    piece('far', 'Pioneer Trail', [1200, 0], [1300, 0]), // 700 m past the chain
   ];
   const groups = groupChanges(chain);
   assert.deepEqual(ids(groups), [['a', 'b', 'c'], ['far']]);
@@ -77,25 +77,40 @@ test('changes whose endpoints meet group transitively, even across types', () =>
     groups[0].bbox.map((x) => Number(x.toFixed(4))),
     [-120, 39, -120 + 500 * metresLng, 39].map((x) => Number(x.toFixed(4))),
   );
-  assert.deepEqual(ids(groupChanges(chain, 5)), [['a'], ['b'], ['c'], ['far']]);
+  assert.deepEqual(ids(groupChanges(chain, 20, 5)), [['a'], ['b'], ['c'], ['far']]);
 });
 
-test('null names join a named group; different names and mid-line crossings do not', () => {
+test('same-named changes join across a gap up to the group gap, case-insensitively', () => {
+  const pieces = [
+    piece('a', 'Pioneer Trail', [0, 0], [100, 0]),
+    piece('b', 'pioneer trail', [450, 0], [600, 0]), // 350 m gap
+    piece('c', 'Pioneer Trail', [1300, 0], [1400, 0]), // 700 m gap
+    piece('d', 'Other Road', [100, 5], [300, 5]), // near a, different name
+  ];
+  assert.deepEqual(ids(groupChanges(pieces)), [['a', 'b'], ['c'], ['d']]);
+  assert.deepEqual(ids(groupChanges(pieces, 20, 1000)), [['a', 'b', 'c'], ['d']]);
+  // Unnamed changes only get the tolerance, never the gap.
+  const lone = [piece('a', 'X', [0, 0], [100, 0]), piece('u', null, [450, 0], [600, 0])];
+  assert.deepEqual(ids(groupChanges(lone)), [['a'], ['u']]);
+});
+
+test('null names join one named group; different names and mid-line crossings do not', () => {
   const groups = groupChanges([
     piece('a', 'Pioneer Trail', [0, 0], [100, 0]),
     piece('n', null, [105, 0], [200, 0]),
     piece('b', 'Pioneer Trail', [205, 0], [300, 0]),
-    piece('other', 'Elm Street', [0, 5], [0, 100]), // starts at a's start, other name
-    piece('x', 'Cross Street', [50, -80], [50, 80]), // crosses a mid-line: no endpoint near
+    piece('other', 'Elm Street', [0, 5], [0, 100]),
+    piece('x', 'Cross Street', [50, -80], [50, 80]),
   ]);
   assert.deepEqual(ids(groups), [['a', 'n', 'b'], ['other'], ['x']]);
-  // An unnamed change between two names cannot merge them.
+  // An unnamed change between two names joins neither, but can group with other unnamed ones.
   const bridge = groupChanges([
     piece('p', 'Alpha', [0, 0], [100, 0]),
     piece('u', null, [105, 0], [200, 0]),
     piece('q', 'Beta', [205, 0], [300, 0]),
+    piece('v', null, [105, 5], [200, 5]),
   ]);
-  assert.deepEqual(ids(bridge), [['p', 'u'], ['q']]);
+  assert.deepEqual(ids(bridge).sort(), [['p'], ['q'], ['u', 'v']]);
   assert.deepEqual(
     ids(
       groupChanges([
@@ -105,6 +120,30 @@ test('null names join a named group; different names and mid-line crossings do n
     ),
     [['u', 'v']],
   );
+});
+
+test('grouping does not depend on the order of the changes', () => {
+  const input = [
+    piece('p', 'Alpha', [0, 0], [100, 0]),
+    piece('u', null, [105, 0], [200, 0]),
+    piece('q', 'Beta', [205, 0], [300, 0]),
+    piece('v', null, [105, 5], [200, 5]),
+    piece('a2', 'alpha', [600, 0], [700, 0]),
+    piece('w', null, [705, 0], [800, 0]),
+    piece('z', null, [3000, 0], [3100, 0]),
+  ];
+  const canon = (cs) =>
+    groupChanges(cs)
+      .map((g) => `${g.id}|${g.name}|${g.members.map((c) => c.id).sort()}`)
+      .sort();
+  const expected = canon(input);
+  assert.equal(expected.length, 4);
+  let seed = 7;
+  const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let n = 0; n < 50; n++) {
+    const shuffled = [...input].sort(() => rand() - 0.5);
+    assert.deepEqual(canon(shuffled), expected);
+  }
 });
 
 test('union of member ways is deduplicated and ranked by total metres', () => {

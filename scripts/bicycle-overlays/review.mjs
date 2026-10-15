@@ -6,15 +6,17 @@ import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { cleanFix, readDecisions, REASONS } from './decisions.mjs';
+import { cleanFix, GROUP_GAP, readDecisions, REASONS } from './decisions.mjs';
 import { readLayers } from './diff.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const HELP = `Review the output of diff.mjs in the browser and record accept/reject decisions.
-Usage: node scripts/bicycle-overlays/review.mjs --changes FILE --decisions FILE [--port N]
+Usage: node scripts/bicycle-overlays/review.mjs --changes FILE --decisions FILE [--port N] [--group-gap M]
   --changes FILE    output of diff.mjs
   --decisions FILE  created if missing; decisions are saved here as you make them. Reuse the
                     same file on later runs and repeated changes keep their decision.
+  --group-gap M     same-named changes whose ends are within M metres are listed as one group
+                    (default 500; unnamed ones need the diff's tolerance)
   --port N          default 8787; the server listens on 127.0.0.1 only
 `;
 
@@ -62,6 +64,7 @@ async function main() {
       changes: { type: 'string' },
       decisions: { type: 'string' },
       port: { type: 'string', default: '8787' },
+      'group-gap': { type: 'string', default: String(GROUP_GAP) },
       help: { type: 'boolean' },
     },
   });
@@ -84,7 +87,7 @@ async function main() {
   const before = await readLayers(diff.before);
   const after = await readLayers(diff.after);
   const data = JSON.stringify({
-    changes: diff,
+    changes: { ...diff, group_gap_m: Number(values['group-gap']) },
     before: Object.fromEntries(
       Object.entries(before).map(([k, fc]) => [k, lean(fc, ['name'])]),
     ),

@@ -22,28 +22,40 @@ export function readDecisions(json) {
 export const isRecurring = (decision, run) =>
   decision?.decision === 'reject' && Boolean(decision.run) && decision.run !== run;
 
-// Connected changes: line endpoints within `tolerance` metres, transitively, when the names
-// match or one is null. A group's name is its non-null name, so a null-named change cannot
-// join two differently named groups. Members keep the input order.
+// Connected changes share a group, independent of input order (members keep input order, the
+// group id is its smallest change id). Endpoints only, so cross streets stay out.
+// 1. Changes with the same name (case-insensitive) join when endpoints are within `gap` metres.
+// 2. An unnamed change joins the named groups it touches (endpoints within `tolerance`) only if
+//    they all share one name; touching two different names, it joins neither.
+// 3. Unnamed changes left over join each other within `tolerance`.
+export const GROUP_GAP = 500;
 const metresBetween = (a, b) =>
   Math.hypot(
     (a[0] - b[0]) * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180),
     a[1] - b[1],
   ) * 111320;
-export function groupChanges(changes, tolerance = 20) {
+export function groupChanges(changes, tolerance = 20, gap = GROUP_GAP) {
   const root = changes.map((_, i) => i);
-  const name = changes.map((c) => c.name ?? null);
   const find = (i) => (root[i] === i ? i : (root[i] = find(root[i])));
+  const union = (i, j) => (root[find(j)] = find(i));
   const ends = changes.map((c) => [c.coords[0], c.coords.at(-1)]);
-  for (let i = 0; i < changes.length; i++)
-    for (let j = i + 1; j < changes.length; j++) {
-      const [a, b] = [find(i), find(j)];
-      if (a === b || (name[a] && name[b] && name[a] !== name[b])) continue;
-      if (ends[i].some((p) => ends[j].some((q) => metresBetween(p, q) <= tolerance))) {
-        root[b] = a;
-        name[a] = name[a] ?? name[b];
-      }
-    }
+  const within = (i, j, metres) =>
+    ends[i].some((p) => ends[j].some((q) => metresBetween(p, q) <= metres));
+  const key = (c) => c.name?.trim().toLowerCase() || null;
+  const named = changes.flatMap((c, i) => (key(c) ? [i] : []));
+  const unnamed = changes.flatMap((c, i) => (key(c) ? [] : [i]));
+  for (const i of named)
+    for (const j of named)
+      if (i < j && key(changes[i]) === key(changes[j]) && within(i, j, gap)) union(i, j);
+  const left = [];
+  for (const n of unnamed) {
+    const touched = named.filter((i) => within(n, i, tolerance));
+    if (touched.length && new Set(touched.map((i) => key(changes[i]))).size === 1)
+      for (const i of touched) union(i, n);
+    else left.push(n);
+  }
+  for (const i of left)
+    for (const j of left) if (i < j && within(i, j, tolerance)) union(i, j);
   const groups = new Map();
   changes.forEach((c, i) => {
     const r = find(i);
@@ -54,9 +66,14 @@ export function groupChanges(changes, tolerance = 20) {
     const coords = members.flatMap((c) => c.coords);
     const lngs = coords.map((p) => p[0]);
     const lats = coords.map((p) => p[1]);
+    const ids = members.map((c) => c.id).sort();
     return {
-      id: members[0].id,
-      name: name[r],
+      id: ids[0],
+      name:
+        members
+          .map((c) => c.name)
+          .filter(Boolean)
+          .sort()[0] ?? null,
       members,
       metres: members.reduce((sum, c) => sum + c.metres, 0),
       coords,
