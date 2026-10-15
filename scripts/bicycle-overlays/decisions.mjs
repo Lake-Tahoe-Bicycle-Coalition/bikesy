@@ -1,9 +1,80 @@
 // Helpers shared by review.mjs, review.html (served at /decisions.mjs) and apply.mjs.
 
-// An exclude made on an earlier diff whose change is back: the OSM data is still wrong.
+// Decisions file: {"version": 2, "decisions": {id: {decision: "accept" | "reject", reason, run, note, osm_fix, at}}}.
+// A reject has a reason: "osm" (fix it in OSM) or "generator" (fix the rules). Version 1 had
+// no version field and "include" / "exclude" (an exclude meant an OSM fix).
+export const REASONS = ['osm', 'generator'];
+export function readDecisions(json) {
+  if (json?.version > 2) throw new Error(`Unknown decisions version ${json.version}`);
+  return Object.fromEntries(
+    Object.entries(json?.decisions ?? {}).map(([id, entry]) => {
+      const { decision, ...rest } = entry;
+      if (decision === 'include') return [id, { decision: 'accept', ...rest }];
+      if (decision === 'exclude')
+        return [id, { decision: 'reject', reason: 'osm', ...rest }];
+      return [id, entry];
+    }),
+  );
+}
+
+// A reject made on an earlier diff whose change is back: the problem is still there.
 // Decisions saved before `run` existed count as made on the current diff.
 export const isRecurring = (decision, run) =>
-  decision?.decision === 'exclude' && Boolean(decision.run) && decision.run !== run;
+  decision?.decision === 'reject' && Boolean(decision.run) && decision.run !== run;
+
+// Connected changes: line endpoints within `tolerance` metres, transitively, when the names
+// match or one is null. A group's name is its non-null name, so a null-named change cannot
+// join two differently named groups. Members keep the input order.
+const metresBetween = (a, b) =>
+  Math.hypot(
+    (a[0] - b[0]) * Math.cos((((a[1] + b[1]) / 2) * Math.PI) / 180),
+    a[1] - b[1],
+  ) * 111320;
+export function groupChanges(changes, tolerance = 20) {
+  const root = changes.map((_, i) => i);
+  const name = changes.map((c) => c.name ?? null);
+  const find = (i) => (root[i] === i ? i : (root[i] = find(root[i])));
+  const ends = changes.map((c) => [c.coords[0], c.coords.at(-1)]);
+  for (let i = 0; i < changes.length; i++)
+    for (let j = i + 1; j < changes.length; j++) {
+      const [a, b] = [find(i), find(j)];
+      if (a === b || (name[a] && name[b] && name[a] !== name[b])) continue;
+      if (ends[i].some((p) => ends[j].some((q) => metresBetween(p, q) <= tolerance))) {
+        root[b] = a;
+        name[a] = name[a] ?? name[b];
+      }
+    }
+  const groups = new Map();
+  changes.forEach((c, i) => {
+    const r = find(i);
+    if (!groups.has(r)) groups.set(r, []);
+    groups.get(r).push(c);
+  });
+  return [...groups.entries()].map(([r, members]) => {
+    const coords = members.flatMap((c) => c.coords);
+    const lngs = coords.map((p) => p[0]);
+    const lats = coords.map((p) => p[1]);
+    return {
+      id: members[0].id,
+      name: name[r],
+      members,
+      metres: members.reduce((sum, c) => sum + c.metres, 0),
+      coords,
+      bbox: [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)],
+    };
+  });
+}
+
+// Ways of several changes, each once, longest total distance along the stretches first.
+export function unionWays(changes) {
+  const ways = new Map();
+  for (const w of changes.flatMap((c) => c.ways)) {
+    const seen = ways.get(w.id);
+    if (seen) seen.metres += w.metres ?? 0;
+    else ways.set(w.id, { ...w, metres: w.metres ?? 0 });
+  }
+  return [...ways.values()].sort((a, b) => (b.metres ?? 0) - (a.metres ?? 0));
+}
 
 // "surface=dirt -cycleway, highway=path;name=A B" → set key=value, remove -key. Separators:
 // whitespace, commas, semicolons. Returns { tags: [[key, value | null]], error }.

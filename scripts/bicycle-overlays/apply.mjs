@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
-import { isRecurring } from './decisions.mjs';
+import { isRecurring, readDecisions } from './decisions.mjs';
 import {
   CLASSES,
   cutLine,
@@ -14,13 +14,14 @@ import {
   segmentGrid,
 } from './diff.mjs';
 
-const HELP = `Write updated class layers: the before layers plus only the changes you included.
+const HELP = `Write updated class layers: the before layers plus only the changes you accepted.
 Usage: node scripts/bicycle-overlays/apply.mjs --changes FILE --decisions FILE --output NEW_DIRECTORY
   --changes FILE    output of diff.mjs (it names the before and after directories)
-  --decisions FILE  {"decisions": {"<change id>": {"decision": "include" | "exclude"}}}
+  --decisions FILE  {"version": 2, "decisions": {"<change id>": {"decision": "accept" | "reject", "reason": "osm" | "generator"}}}
+                    (version 1 files with include / exclude are read too)
   --output DIR      must not exist; receives class-*.geojson and applied.json
-Changes without a decision, or excluded, leave the before layers as they were. An exclude made
-on an earlier diff whose change is back (OSM still unfixed) counts as undecided: recurring_excluded.
+Changes without a decision, or rejected, leave the before layers as they were. A reject made
+on an earlier diff whose change is back (still present) counts as undecided: recurring.
 `;
 
 // Samples from diff.mjs lie exactly on their own feature, so a 1 m match selects the same
@@ -47,28 +48,36 @@ const lineCollection = (coordsList) => ({
   })),
 });
 
-// Excluded (decided on this diff), recurring excludes (back after an earlier exclude) and the rest.
+// Accepted, rejected on this diff (by reason), recurring rejects (back after an earlier reject,
+// counted as undecided) and the rest.
 export function tally(changes, decisions, run) {
-  const recurring = changes.filter((c) => isRecurring(decisions[c.id], run)).length;
-  const excluded =
-    changes.filter((c) => decisions[c.id]?.decision === 'exclude').length - recurring;
-  const included = changes.filter((c) => decisions[c.id]?.decision === 'include').length;
+  const rejected = { osm: 0, generator: 0 };
+  let accepted = 0;
+  let recurring = 0;
+  for (const c of changes) {
+    const d = decisions[c.id];
+    if (d?.decision === 'accept') accepted++;
+    else if (isRecurring(d, run)) recurring++;
+    else if (d?.decision === 'reject')
+      rejected[d.reason === 'generator' ? 'generator' : 'osm']++;
+  }
   return {
-    excluded,
-    recurring_excluded: recurring,
-    undecided: changes.length - included - excluded,
+    accepted,
+    rejected,
+    recurring,
+    undecided: changes.length - accepted - rejected.osm - rejected.generator,
   };
 }
 
 export function applyChanges(before, after, changes, decisions, { tolerance = 20 } = {}) {
   const project = projector([...Object.values(before), ...Object.values(after)]);
-  const included = changes.filter((c) => decisions[c.id]?.decision === 'include');
+  const accepted = changes.filter((c) => decisions[c.id]?.decision === 'accept');
   const output = {};
 
   for (const klass of CLASSES) {
     const features = before[klass]?.features ?? [];
-    const own = included.filter((c) => c.type === 'removed' && c.before === klass);
-    const moved = included.filter((c) => c.type === 'changed' && c.before === klass);
+    const own = accepted.filter((c) => c.type === 'removed' && c.before === klass);
+    const moved = accepted.filter((c) => c.type === 'changed' && c.before === klass);
     const movedGrid = moved.length
       ? segmentGrid(lineCollection(moved.map((c) => c.coords)), project)
       : null;
@@ -98,7 +107,7 @@ export function applyChanges(before, after, changes, decisions, { tolerance = 20
           properties: { ...feature.properties, overlay_source: 'before' },
         });
     }
-    for (const c of included.filter((x) => x.type !== 'removed' && x.after === klass)) {
+    for (const c of accepted.filter((x) => x.type !== 'removed' && x.after === klass)) {
       const feature = after[klass].features[c.source.index];
       const grid = segmentGrid(lineCollection([c.coords]), project);
       const pieces = lineParts(feature.geometry).flatMap((part) =>
@@ -121,7 +130,7 @@ export function applyChanges(before, after, changes, decisions, { tolerance = 20
     if (kept.length || before[klass])
       output[klass] = { type: 'FeatureCollection', features: kept };
   }
-  return { layers: output, included };
+  return { layers: output, accepted };
 }
 
 async function main() {
@@ -137,7 +146,7 @@ async function main() {
   if (!values.changes || !values.decisions || !values.output)
     throw new Error('--changes, --decisions and --output are required.');
   const diff = JSON.parse(await readFile(values.changes, 'utf8'));
-  const { decisions = {} } = JSON.parse(await readFile(values.decisions, 'utf8'));
+  const decisions = readDecisions(JSON.parse(await readFile(values.decisions, 'utf8')));
   const before = await readLayers(diff.before);
   const after = await readLayers(diff.after);
   for (const c of diff.changes)
@@ -145,7 +154,7 @@ async function main() {
       throw new Error(
         `${diff.after} no longer matches ${values.changes}; run diff.mjs again.`,
       );
-  const { layers, included } = applyChanges(before, after, diff.changes, decisions, {
+  const { layers, accepted } = applyChanges(before, after, diff.changes, decisions, {
     tolerance: diff.tolerance_m,
   });
   const output = path.resolve(values.output);
@@ -165,7 +174,7 @@ async function main() {
         decisions: path.resolve(values.decisions),
         before: diff.before,
         after: diff.after,
-        included: included.map(
+        accepted: accepted.map(
           ({ id, type, before: from, after: to, name, metres, ways }) => ({
             id,
             type,
@@ -183,7 +192,7 @@ async function main() {
     ) + '\n',
   );
   console.log(
-    `Applied ${included.length} of ${diff.changes.length} changes (${counts.excluded} excluded, ${counts.undecided} undecided, of which ${counts.recurring_excluded} recurring excludes) → ${output}`,
+    `Applied ${accepted.length} of ${diff.changes.length} changes (rejected ${counts.rejected.osm} to fix in OSM, ${counts.rejected.generator} to fix in the generator; ${counts.undecided} undecided, of which ${counts.recurring} rejected earlier and still present) → ${output}`,
   );
 }
 

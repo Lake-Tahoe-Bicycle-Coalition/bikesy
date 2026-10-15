@@ -27,7 +27,7 @@ const after = {
   III: fc(line(39.002, { osm_way_id: 3, name: 'Lane to route' })),
 };
 const changes = diffLayers(before, after);
-const decide = (type, decision = 'include') =>
+const decide = (type, decision = 'accept') =>
   Object.fromEntries(
     changes.filter((c) => c.type === type).map((c) => [c.id, { decision }]),
   );
@@ -36,10 +36,10 @@ const names = (layer) => (layer?.features ?? []).map((f) => f.properties.name).s
 test('without included changes the before layers are kept as they were', () => {
   for (const decisions of [
     {},
-    { ...decide('added', 'exclude'), ...decide('removed', 'exclude') },
+    { ...decide('added', 'reject'), ...decide('removed', 'reject') },
   ]) {
-    const { layers, included } = applyChanges(before, after, changes, decisions);
-    assert.equal(included.length, 0);
+    const { layers, accepted } = applyChanges(before, after, changes, decisions);
+    assert.equal(accepted.length, 0);
     assert.deepEqual(names(layers.I), ['Gone path', 'Kept path']);
     assert.deepEqual(names(layers.II), ['Lane to route']);
     assert.deepEqual(layers.I.features[0].geometry, before.I.features[0].geometry);
@@ -47,7 +47,7 @@ test('without included changes the before layers are kept as they were', () => {
   }
 });
 
-test('included additions, removals and class changes are applied', () => {
+test('accepted additions, removals and class changes are applied', () => {
   const { layers } = applyChanges(before, after, changes, {
     ...decide('added'),
     ...decide('removed'),
@@ -77,7 +77,7 @@ test('removing the middle of a longer line keeps both ends', () => {
     ['removed'],
   );
   const { layers } = applyChanges(long, ends, diff, {
-    [diff[0].id]: { decision: 'include' },
+    [diff[0].id]: { decision: 'accept' },
   });
   const [kept] = layers.I.features;
   assert.equal(kept.geometry.type, 'MultiLineString');
@@ -86,23 +86,22 @@ test('removing the middle of a longer line keeps both ends', () => {
   assert.deepEqual(kept.geometry.coordinates[1].at(-1), [-119.988, 39.01]);
 });
 
-test('an exclude from an earlier run counts as undecided and is reported separately', () => {
-  const [a, b, c] = changes;
+test('a reject from an earlier run counts as undecided and is reported separately', () => {
+  const [a, b, c, d] = changes;
   const decisions = {
-    [a.id]: { decision: 'exclude', run: '/old' },
-    [b.id]: { decision: 'exclude', run: '/new' },
-    [c.id]: { decision: 'exclude' }, // saved before `run` existed: this run
+    [a.id]: { decision: 'reject', reason: 'osm', run: '/old' },
+    [b.id]: { decision: 'reject', reason: 'generator', run: '/new' },
+    [c.id]: { decision: 'reject', reason: 'osm' }, // saved before `run` existed: this run
   };
+  if (d) decisions[d.id] = { decision: 'accept', run: '/old' };
   const t = tally(changes, decisions, '/new');
-  assert.equal(t.recurring_excluded, 1);
-  assert.equal(t.excluded, 2);
-  assert.equal(t.undecided, changes.length - 2);
-  const { included } = applyChanges(before, after, changes, {
+  assert.deepEqual(t.rejected, { osm: 1, generator: 1 });
+  assert.equal(t.recurring, 1);
+  assert.equal(t.accepted, d ? 1 : 0);
+  assert.equal(t.undecided, changes.length - t.accepted - 2);
+  const { accepted } = applyChanges(before, after, changes, {
     ...decisions,
-    [a.id]: { decision: 'include', run: '/old' }, // includes carry over
+    [a.id]: { decision: 'accept', run: '/old' }, // accepts carry over
   });
-  assert.deepEqual(
-    included.map((x) => x.id),
-    [a.id],
-  );
+  assert.deepEqual(accepted.map((x) => x.id).sort(), [a.id, ...(d ? [d.id] : [])].sort());
 });

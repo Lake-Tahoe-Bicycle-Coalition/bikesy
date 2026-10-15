@@ -6,11 +6,11 @@ import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { cleanFix } from './decisions.mjs';
+import { cleanFix, readDecisions, REASONS } from './decisions.mjs';
 import { readLayers } from './diff.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HELP = `Review the output of diff.mjs in the browser and record include/exclude decisions.
+const HELP = `Review the output of diff.mjs in the browser and record accept/reject decisions.
 Usage: node scripts/bicycle-overlays/review.mjs --changes FILE --decisions FILE [--port N]
   --changes FILE    output of diff.mjs
   --decisions FILE  created if missing; decisions are saved here as you make them. Reuse the
@@ -72,13 +72,13 @@ async function main() {
   const decisionsFile = path.resolve(values.decisions);
   let decisions = {};
   try {
-    decisions = JSON.parse(await readFile(decisionsFile, 'utf8')).decisions ?? {};
+    decisions = readDecisions(JSON.parse(await readFile(decisionsFile, 'utf8')));
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
   const saveDecisions = async () => {
     const temp = `${decisionsFile}.tmp`;
-    await writeFile(temp, JSON.stringify({ decisions }, null, 1) + '\n');
+    await writeFile(temp, JSON.stringify({ version: 2, decisions }, null, 1) + '\n');
     await rename(temp, decisionsFile);
   };
   const before = await readLayers(diff.before);
@@ -117,44 +117,80 @@ async function main() {
       if (req.method === 'GET' && why_)
         return send(res, 200, (await why(diff.after, why_[1])) ?? { found: false });
       if (req.method === 'PUT' && url.pathname === '/decisions') {
+        // One change {id, ...} or a group {ids: [...], ...}; all-or-nothing, one file write.
+        // Absent decision = leave as is, null = clear it. A group's osm_fix.ways may be from any
+        // member; each member keeps only its own.
         let body = '';
         for await (const chunk of req) body += chunk;
-        const { id, decision, note, osm_fix, confirm } = JSON.parse(body);
-        const change = diff.changes.find((c) => c.id === id);
-        if (!change) return send(res, 404, { error: 'Unknown change' });
-        if (decision && !['include', 'exclude'].includes(decision))
+        const {
+          id,
+          ids = [id],
+          decision,
+          reason,
+          note,
+          osm_fix,
+          confirm,
+        } = JSON.parse(body);
+        const members = ids.map((x) => diff.changes.find((c) => c.id === x));
+        if (!members.length || members.includes(undefined))
+          return send(res, 404, { error: 'Unknown change' });
+        if (decision && !['accept', 'reject'].includes(decision))
           return send(res, 400, { error: 'Bad decision' });
-        let fix = decisions[id]?.osm_fix;
-        if (osm_fix === null) fix = undefined;
-        else if (osm_fix)
+        if (decision === 'reject' && !REASONS.includes(reason))
+          return send(res, 400, { error: 'A reject needs a reason: osm or generator' });
+        let clean;
+        if (osm_fix)
           try {
-            fix = {
-              ...fix,
-              ...cleanFix(
-                osm_fix,
-                change.ways.map((w) => w.id),
-              ),
-            };
+            clean = cleanFix(
+              osm_fix,
+              members.flatMap((c) => c.ways.map((w) => w.id)),
+            );
           } catch (error) {
             return send(res, 400, { error: error.message });
           }
         // `run` says which diff the decision was made on. Saving only a note or fix keeps it;
-        // a new or confirmed decision (even the same exclude again) records this diff.
-        const old = decisions[id];
-        const next = {
-          ...old,
-          decision: decision ?? undefined,
-          run:
-            decision && (confirm || decision !== old?.decision) ? diff.after : old?.run,
-          note: note ?? old?.note,
-          osm_fix: fix,
-          at: new Date().toISOString(),
-        };
-        if (!decision) delete next.run;
-        if (!next.decision && !next.note && !next.osm_fix) delete decisions[id];
-        else decisions[id] = JSON.parse(JSON.stringify(next));
+        // a new or confirmed decision (even the same reject again) records this diff.
+        const updated = {};
+        for (const c of members) {
+          const old = decisions[c.id];
+          let fix = old?.osm_fix;
+          if (osm_fix === null) fix = undefined;
+          else if (clean)
+            fix = {
+              ...fix,
+              ...clean,
+              ...(clean.ways && {
+                ways: clean.ways.filter((w) => c.ways.some((x) => Number(x.id) === w)),
+              }),
+            };
+          const next = { ...old, osm_fix: fix, at: new Date().toISOString() };
+          if (note !== undefined) next.note = note;
+          if (decision !== undefined) {
+            const same = decision === old?.decision && reason === old?.reason;
+            next.decision = decision ?? undefined;
+            next.reason = decision === 'reject' ? reason : undefined;
+            next.run =
+              decision && (confirm || !same)
+                ? diff.after
+                : decision
+                  ? old?.run
+                  : undefined;
+          }
+          const { decision: d, reason: r, run, note: n, osm_fix: f, at } = next;
+          updated[c.id] = JSON.parse(
+            JSON.stringify({ decision: d, reason: r, run, note: n, osm_fix: f, at }),
+          );
+          if (!d && !n && !f) updated[c.id] = null;
+        }
+        for (const [key, value] of Object.entries(updated))
+          if (value) decisions[key] = value;
+          else delete decisions[key];
         await saveDecisions();
-        return send(res, 200, decisions[id] ?? {});
+        return send(
+          res,
+          200,
+          Object.fromEntries(members.map((c) => [c.id, decisions[c.id] ?? {}])),
+        );
       }
       send(res, 404, { error: 'Not found' });
     } catch (error) {
