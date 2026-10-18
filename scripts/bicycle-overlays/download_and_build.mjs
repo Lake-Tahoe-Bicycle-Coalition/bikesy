@@ -51,16 +51,30 @@ async function download(url, file, parts = 8) {
         const start = i * chunk;
         const end = Math.min(size, start + chunk) - 1;
         if (start > end) return;
-        const res = await fetch(url, { headers: { range: `bytes=${start}-${end}` } });
-        if (res.status !== 206)
-          throw new Error(`${url}: no range support (HTTP ${res.status})`);
+        // Dropped connections are common on slow downloads: resume from where the range
+        // stopped, giving up after 5 attempts in a row that make no progress.
         let position = start;
-        for await (const buffer of res.body) {
-          await handle.write(buffer, 0, buffer.length, position);
-          position += buffer.length;
-          done += buffer.length;
+        for (let failures = 0; position <= end;) {
+          const from = position;
+          try {
+            const res = await fetch(url, {
+              headers: { range: `bytes=${position}-${end}` },
+            });
+            if (res.status !== 206)
+              throw new Error(`${url}: no range support (HTTP ${res.status})`);
+            for await (const buffer of res.body) {
+              await handle.write(buffer, 0, buffer.length, position);
+              position += buffer.length;
+              done += buffer.length;
+            }
+            if (position <= end) throw new Error(`${url}: connection closed early`);
+          } catch (error) {
+            failures = position > from ? 1 : failures + 1;
+            if (failures >= 5) throw error;
+            console.log(`  retrying after: ${error.message}`);
+            await new Promise((resolve) => setTimeout(resolve, 5000 * failures));
+          }
         }
-        if (position !== end + 1) throw new Error(`${url}: incomplete download`);
       }),
     );
   } finally {
