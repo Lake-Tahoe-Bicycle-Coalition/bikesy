@@ -2,6 +2,17 @@
 
 Creates **reviewable, inferred bicycle facility layers** from a local OSM snapshot. It does not certify California bikeway classes, establish legal access, rate safety, or calculate routes. It writes a new directory and never changes Mapbox styles, checked-in map assets, routing costs, or production services.
 
+## Updating a region's overlays
+
+Run the commands from the repository root. You don't run `generate.mjs` yourself here: `download_and_build.mjs` runs it.
+
+1. **Build:** `node scripts/bicycle-overlays/download_and_build.mjs --region tahoe` downloads the region's OSM extracts and generates a candidate.
+2. **Review:** `node scripts/bicycle-overlays/review.mjs --region tahoe` compares the candidate with the live layers. Accept or reject each change at http://127.0.0.1:8787/.
+3. **Fix and repeat:** for each reject, fix the tags in OSM or the rules in the generator, then build and review again. Decisions carry over, so only new or still-wrong changes need attention.
+4. **Publish** once every change is accepted: upload the candidate's `class-*.geojson` to the region's Mapbox datasets (Tahoe), or copy them and `run.json` into `live/` (regions without datasets). Commit `decisions.json` and `live/`.
+
+First-time setup: the Python environment under [Run locally](#run-locally) and [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`). Details are under [Reviewing changes before publishing](#reviewing-changes-before-publishing).
+
 ## Generator package
 
 Keep this directory together: `generate.mjs` uses `rules.mjs`, `relations.mjs`, `geometry.mjs` and the `read_osm.py` bridge. `download_and_build.mjs` and `review.mjs` (with `region.mjs`, `live.mjs`, `diff.mjs`, `decisions.mjs`, `review.html` and `ways_near.py`) build and review a region's next update. `requirements.txt` pins the reader dependencies; `*.test.mjs` and `fixtures/` provide generator regressions, including XML/PBF end-to-end coverage. No comparison viewer or spatial-analysis packages are required. The virtual environment and generated `build/` outputs are gitignored.
@@ -38,12 +49,7 @@ Use `--strict-geometry` to fail when a candidate way has missing nodes or degene
 
 ## Reviewing changes before publishing
 
-Before publishing, compare a new run with the layers on the map and decide on each change. Rejected changes are fixed at the source, in OSM or in the generator rules, and the run is rebuilt; the published layers are always unedited generator output.
-
-```sh
-node scripts/bicycle-overlays/download_and_build.mjs --region tahoe   # download OSM, build a candidate
-node scripts/bicycle-overlays/review.mjs --region tahoe      # review it at http://127.0.0.1:8787/
-```
+Rejected changes are fixed at the source, in OSM or in the generator rules, and the run is rebuilt; the published layers are always unedited generator output.
 
 Each region keeps its review data in `data/bicycle-overlays/<region>/`:
 
@@ -55,7 +61,7 @@ Each region keeps its review data in `data/bicycle-overlays/<region>/`:
 | `archive/<run>/` | ignored   | earlier candidates                                                                                                               |
 | `../downloads/`  | ignored   | Geofabrik extracts, shared by regions and reused until Geofabrik has newer ones                                                  |
 
-The region's `src/appConfig/<region>.js` supplies the settings: `BICYCLE_OVERLAY_EXTRACTS` (Geofabrik paths), `BICYCLE_OVERLAY_OPTIONS` (as for `generate.mjs --region`, including the bbox the extracts are clipped to) and an `overlayClass` on each published `MAP_LAYERS` dataset. `download_and_build.mjs` needs [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`) to clip and merge the extracts. `review.mjs` refreshes `live/` from Mapbox first when `MAPBOX_SECRET_TOKEN` (a token with `datasets:read`) is in the environment or `.env`; commit `live/` when it changes. Regions whose layers are drawn in the Mapbox style (SF, Contra Costa) have no datasets: after publishing a build, copy its `class-*.geojson` and `run.json` into `live/`. `--before` and `--after` compare other directories, for example an archived run.
+The region's `src/appConfig/<region>.js` supplies the settings: `BICYCLE_OVERLAY_EXTRACTS` (Geofabrik paths), `BICYCLE_OVERLAY_OPTIONS` (as for `generate.mjs --region`, including the bbox the extracts are clipped to) and an `overlayClass` on each published `MAP_LAYERS` dataset. `download_and_build.mjs` uses osmium-tool to clip and merge the extracts. `review.mjs` refreshes `live/` from Mapbox first when `MAPBOX_SECRET_TOKEN` (a token with `datasets:read`) is in the environment or `.env`; commit `live/` when it changes. Regions whose layers are drawn in the Mapbox style (SF, Contra Costa) have no datasets: after publishing a build, copy its `class-*.geojson` and `run.json` into `live/`. `--before` and `--after` compare other directories, for example an archived run.
 
 **Changes.** Lines are compared every 10 m, so the live layers need no OSM IDs. A stretch is **added** or **removed** when nothing of the same class lies within 20 m (`--tolerance`) on the other side, and **changed** when another class has taken its place. Differences under 50 m (`--min-length`) are ignored. Each change lists the OSM ways along it. Changes with the same name whose ends are within 500 m (`--group-gap`) form a group that is decided together; expand it to decide members one by one.
 
