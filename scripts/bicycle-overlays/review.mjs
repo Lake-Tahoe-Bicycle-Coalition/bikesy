@@ -1,23 +1,31 @@
 #!/usr/bin/env node
 import { createReadStream } from 'node:fs';
-import { readFile, rename, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { cleanFix, GROUP_GAP, readDecisions, REASONS } from './decisions.mjs';
-import { readLayers } from './diff.mjs';
+import { cleanFix, GROUP_GAP, REASONS } from './decisions.mjs';
+import { diffDirs, summaryLines } from './diff.mjs';
+import { refreshLive } from './live.mjs';
+import { loadRegion, readRun, regionPaths, secretToken } from './region.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HELP = `Review the output of diff.mjs in the browser and record accept/reject decisions.
-Usage: node scripts/bicycle-overlays/review.mjs --changes FILE --decisions FILE [--port N] [--group-gap M]
-  --changes FILE    output of diff.mjs
-  --decisions FILE  created if missing; decisions are saved here as you make them. Reuse the
-                    same file on later runs and repeated changes keep their decision.
-  --group-gap M     same-named changes whose ends are within M metres are listed as one group
-                    (default 500; unnamed ones need the diff's tolerance)
-  --port N          default 8787; the server listens on 127.0.0.1 only
+const HELP = `Compare the region's candidate with its live layers and review each change in the browser.
+Usage: node scripts/bicycle-overlays/review.mjs --region NAME [options]
+  --region NAME         uses data/bicycle-overlays/NAME: live/ (refreshed from Mapbox first when
+                        MAPBOX_SECRET_TOKEN is set), candidate/ (from download_and_build.mjs) and
+                        decisions.json, where decisions are saved as you make them
+  --before DIR          compare these class-*.geojson instead of live/
+  --after DIR           review these class-*.geojson instead of candidate/; an .osm.pbf
+                        in the directory is used to list OSM ways along each change
+  --tolerance METRES    default 20: lines closer than this count as the same stretch
+  --min-length METRES   default 50: ignore shorter differences
+  --group-gap METRES    default 500: same-named changes whose ends are this close are one group
+  --decisions FILE      use this file instead of the region's
+  --python FILE         default: tool-local .venv/bin/python
+  --port N              default 8787; the server listens on 127.0.0.1 only
 `;
 
 const lean = (collection, keys) => ({
@@ -61,32 +69,91 @@ async function why(afterDir, wayId) {
 async function main() {
   const { values } = parseArgs({
     options: {
-      changes: { type: 'string' },
+      region: { type: 'string' },
+      before: { type: 'string' },
+      after: { type: 'string' },
+      python: { type: 'string' },
+      tolerance: { type: 'string', default: '20' },
+      'min-length': { type: 'string', default: '50' },
+      'group-gap': { type: 'string', default: String(GROUP_GAP) },
       decisions: { type: 'string' },
       port: { type: 'string', default: '8787' },
-      'group-gap': { type: 'string', default: String(GROUP_GAP) },
       help: { type: 'boolean' },
     },
   });
   if (values.help) return console.log(HELP);
-  if (!values.changes || !values.decisions)
-    throw new Error('--changes and --decisions are required.');
-  const diff = JSON.parse(await readFile(values.changes, 'utf8'));
-  const decisionsFile = path.resolve(values.decisions);
+  const region = await loadRegion(values.region);
+  const paths = regionPaths(region.name);
+  const decisionsFile = path.resolve(values.decisions ?? paths.decisions);
   let decisions = {};
   try {
-    decisions = readDecisions(JSON.parse(await readFile(decisionsFile, 'utf8')));
+    decisions = JSON.parse(await readFile(decisionsFile, 'utf8'));
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
+  // Sorted by change id, so the file diffs cleanly in git.
   const saveDecisions = async () => {
+    const sorted = Object.fromEntries(
+      Object.keys(decisions)
+        .sort()
+        .map((id) => [id, decisions[id]]),
+    );
+    await mkdir(path.dirname(decisionsFile), { recursive: true });
     const temp = `${decisionsFile}.tmp`;
-    await writeFile(temp, JSON.stringify({ version: 2, decisions }, null, 1) + '\n');
+    await writeFile(temp, JSON.stringify(sorted, null, 2) + '\n');
     await rename(temp, decisionsFile);
   };
-  const before = await readLayers(diff.before);
-  const after = await readLayers(diff.after);
+
+  if (!values.before) {
+    const token = await secretToken();
+    if (!Object.keys(region.datasets).length)
+      console.log(
+        `${region.name} has no MAP_LAYERS with an overlayClass: live/ is not refreshed, so put the published class-*.geojson there yourself.`,
+      );
+    else if (!token)
+      console.log('MAPBOX_SECRET_TOKEN is not set: using live/ as committed.');
+    else
+      try {
+        const changed = await refreshLive(region.datasets, paths.live, token);
+        console.log(
+          changed.length
+            ? `Live layers changed on Mapbox: class ${changed.join(', ')} (commit live/)`
+            : 'Live layers are up to date with Mapbox.',
+        );
+      } catch (error) {
+        console.log(
+          `Could not refresh live/ from Mapbox (${error.message}); using it as committed.`,
+        );
+      }
+  }
+  const beforeDir = values.before ?? paths.live;
+  const afterDir = values.after ?? paths.candidate;
+  // A live/ built by download_and_build.mjs (regions without Mapbox datasets) has a run.json.
+  const liveRun = await readRun(beforeDir);
+  if (liveRun)
+    console.log(
+      `Before: ${liveRun.run}${liveRun.built_at ? `, built ${liveRun.built_at}` : ''}`,
+    );
+  if (!values.after && !(await stat(afterDir).catch(() => null)))
+    throw new Error(
+      `No candidate yet: node scripts/bicycle-overlays/download_and_build.mjs --region ${region.name}`,
+    );
+  const extract = (await readdir(afterDir)).find((f) => f.endsWith('.osm.pbf'));
+  if (!extract)
+    console.log(
+      `No .osm.pbf in ${afterDir}: way lists only where the layers carry OSM IDs.`,
+    );
+  const { diff, before, after } = await diffDirs(beforeDir, afterDir, {
+    run: (await readRun(afterDir))?.run,
+    classes: Object.keys(region.datasets),
+    tolerance: Number(values.tolerance),
+    minLength: Number(values['min-length']),
+    extract: extract && path.join(afterDir, extract),
+    python: values.python,
+  });
+  for (const line of summaryLines(diff.summary)) console.log(line);
   const data = JSON.stringify({
+    region: region.name,
     changes: { ...diff, group_gap_m: Number(values['group-gap']) },
     before: Object.fromEntries(
       Object.entries(before).map(([k, fc]) => [k, lean(fc, ['name'])]),
@@ -173,11 +240,7 @@ async function main() {
             next.decision = decision ?? undefined;
             next.reason = decision === 'reject' ? reason : undefined;
             next.run =
-              decision && (confirm || !same)
-                ? diff.after
-                : decision
-                  ? old?.run
-                  : undefined;
+              decision && (confirm || !same) ? diff.run : decision ? old?.run : undefined;
           }
           const { decision: d, reason: r, run, note: n, osm_fix: f, at } = next;
           updated[c.id] = JSON.parse(

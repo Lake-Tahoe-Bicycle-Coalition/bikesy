@@ -8,6 +8,8 @@ const config = {
     LEFT: -122.8,
     ALERT_TEXT: 'This tool only works for the San Francisco Bay Area.',
   },
+  // Geofabrik extracts for scripts/bicycle-overlays/download_and_build.mjs, clipped to SEARCH_BOUNDS.
+  BICYCLE_OVERLAY_EXTRACTS: ['north-america/us/california/norcal'],
   MAPBOX_STYLE_URL: 'mapbox://styles/bikesy/ckmec4z6h3ekg17lr1fas6kwx',
   INITIAL_CENTER_LAT: 37.7749,
   INITIAL_CENTER_LNG: -122.4194,

@@ -1,24 +1,12 @@
-// Helpers shared by review.mjs, review.html (served at /decisions.mjs) and apply.mjs.
+// Helpers shared by review.mjs and review.html (served at /decisions.mjs).
 
-// Decisions file: {"version": 2, "decisions": {id: {decision: "accept" | "reject", reason, run, note, osm_fix, at}}}.
-// A reject has a reason: "osm" (fix it in OSM) or "generator" (fix the rules). Version 1 had
-// no version field and "include" / "exclude" (an exclude meant an OSM fix).
+// Decisions file (data/bicycle-overlays/<region>/decisions.json):
+// {"<change id>": {decision: "accept" | "reject", reason, run, note, osm_fix, at}}.
+// A reject has a reason: "osm" (fix it in OSM) or "generator" (fix the rules). `run` names the
+// diff the decision was made on (the after directory's name).
 export const REASONS = ['osm', 'generator'];
-export function readDecisions(json) {
-  if (json?.version > 2) throw new Error(`Unknown decisions version ${json.version}`);
-  return Object.fromEntries(
-    Object.entries(json?.decisions ?? {}).map(([id, entry]) => {
-      const { decision, ...rest } = entry;
-      if (decision === 'include') return [id, { decision: 'accept', ...rest }];
-      if (decision === 'exclude')
-        return [id, { decision: 'reject', reason: 'osm', ...rest }];
-      return [id, entry];
-    }),
-  );
-}
 
 // A reject made on an earlier diff whose change is back: the problem is still there.
-// Decisions saved before `run` existed count as made on the current diff.
 export const isRecurring = (decision, run) =>
   decision?.decision === 'reject' && Boolean(decision.run) && decision.run !== run;
 

@@ -22,8 +22,7 @@ MIN_SHARE = 0.2
 MIN_METRES = 150
 MIN_WAY_SHARE = 0.6
 MIN_WAY_METRES = 30
-CELL = 0.0005  # degrees; about 45-55 m around Tahoe
-KX = 111320 * math.cos(math.radians(39.05))
+CELL = 0.0005  # degrees; about 40-55 m at mid latitudes
 KY = 110570
 
 
@@ -31,10 +30,12 @@ def main():
     extract, gaps_path, out_path = sys.argv[1:]
     with open(gaps_path) as f:
         gaps = json.load(f)
+    lats = [lat for coords in gaps.values() for _, lat in coords]
+    kx = 111320 * math.cos(math.radians(sum(lats) / len(lats) if lats else 0))
     grid = defaultdict(list)
     for gid, coords in gaps.items():
         for i, (lng, lat) in enumerate(coords):
-            grid[(int(lng // CELL), int(lat // CELL))].append((gid, i, lng * KX, lat * KY))
+            grid[(int(lng // CELL), int(lat // CELL))].append((gid, i, lng * kx, lat * KY))
 
     hits = defaultdict(lambda: defaultdict(set))
     info = {}
@@ -53,7 +54,7 @@ def main():
         total = 0
         near = defaultdict(int)
         for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
-            ax, ay, bx, by = x1 * KX, y1 * KY, x2 * KX, y2 * KY
+            ax, ay, bx, by = x1 * kx, y1 * KY, x2 * kx, y2 * KY
             dx, dy = bx - ax, by - ay
             seg = dx * dx + dy * dy or 1
             for cx in range(int(min(x1, x2) // CELL) - 1, int(max(x1, x2) // CELL) + 2):
@@ -67,7 +68,7 @@ def main():
             for j in range(n):
                 px, py = ax + dx * (j + 0.5) / n, ay + dy * (j + 0.5) / n
                 total += 1
-                cx, cy = int(px / KX // CELL), int(py / KY // CELL)
+                cx, cy = int(px / kx // CELL), int(py / KY // CELL)
                 close = set()
                 for gx in range(cx - 1, cx + 2):
                     for gy in range(cy - 1, cy + 2):

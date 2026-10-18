@@ -452,8 +452,7 @@
         <div class="hint">
           <kbd>j</kbd>/<kbd>k</kbd> next/previous · <kbd>a</kbd> accept ·
           <kbd>o</kbd> reject: fix in OSM · <kbd>g</kbd> reject: fix in the generator ·
-          <kbd>u</kbd> undecide. Only accepted changes are applied; connected changes are
-          grouped and decided together.
+          <kbd>u</kbd> undecide. Connected changes are grouped and decided together.
         </div>
       </header>
       <div id="error" hidden></div>
@@ -530,7 +529,7 @@
       // | reject:generator.
       const status = (c) => {
         const d = decisions[c.id];
-        if (D.isRecurring(d, DATA.changes.after)) return 'recurring';
+        if (D.isRecurring(d, DATA.changes.run)) return 'recurring';
         return d?.decision === 'reject'
           ? `reject:${d.reason}`
           : (d?.decision ?? 'undecided');
@@ -1111,7 +1110,7 @@
           return;
         }
         document.getElementById('paths').textContent =
-          `before ${DATA.changes.before}\nafter ${DATA.changes.after}`;
+          `${DATA.region}: ${DATA.changes.run}\nbefore ${DATA.changes.before}\nafter ${DATA.changes.after}`;
         GROUPS = D.groupChanges(
           DATA.changes.changes,
           DATA.changes.tolerance_m ?? 20,

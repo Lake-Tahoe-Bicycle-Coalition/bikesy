@@ -4,7 +4,7 @@ Creates **reviewable, inferred bicycle facility layers** from a local OSM snapsh
 
 ## Generator package
 
-Keep this directory together: `generate.mjs` uses `rules.mjs`, `relations.mjs`, `geometry.mjs` and the `read_osm.py` bridge; `diff.mjs`, `review.mjs`/`review.html`, `apply.mjs` and `ways_near.py` review changes between runs. `requirements.txt` pins the reader dependencies; `*.test.mjs` and `fixtures/` provide generator regressions, including XML/PBF end-to-end coverage. No comparison viewer or spatial-analysis packages are required. The virtual environment and generated `build/` outputs are gitignored.
+Keep this directory together: `generate.mjs` uses `rules.mjs`, `relations.mjs`, `geometry.mjs` and the `read_osm.py` bridge. `download_and_build.mjs` and `review.mjs` (with `region.mjs`, `live.mjs`, `diff.mjs`, `decisions.mjs`, `review.html` and `ways_near.py`) build and review a region's next update. `requirements.txt` pins the reader dependencies; `*.test.mjs` and `fixtures/` provide generator regressions, including XML/PBF end-to-end coverage. No comparison viewer or spatial-analysis packages are required. The virtual environment and generated `build/` outputs are gitignored.
 
 ## Run locally
 
@@ -38,27 +38,28 @@ Use `--strict-geometry` to fail when a candidate way has missing nodes or degene
 
 ## Reviewing changes before publishing
 
-Each run can be compared with the layers currently on the map, and only the changes you accept are applied. Nothing from OSM is applied unless you accept it.
+Before publishing, compare a new run with the layers on the map and decide on each change. Rejected changes are fixed at the source, in OSM or in the generator rules, and the run is rebuilt; the published layers are always unedited generator output.
 
 ```sh
-# DATA is any directory outside the repo, e.g. DATA=~/bikesy-data/tahoe-2026-10-14
-# 1. Compare. --before is any directory of class-*.geojson: a snapshot of the live layers or an earlier result.
-node scripts/bicycle-overlays/diff.mjs --before $DATA/live --after $DATA/tahoe-2026-10-14 \
-  --extract tahoe.osm.pbf --output $DATA/changes.json
-# 2. Review in the browser; decisions save to the file as you go.
-node scripts/bicycle-overlays/review.mjs --changes $DATA/changes.json --decisions tahoe-decisions.json
-# 3. Write the before layers plus the accepted changes.
-node scripts/bicycle-overlays/apply.mjs --changes $DATA/changes.json --decisions tahoe-decisions.json \
-  --output $DATA/tahoe-published-2026-10-14
+node scripts/bicycle-overlays/download_and_build.mjs --region tahoe   # download OSM, build a candidate
+node scripts/bicycle-overlays/review.mjs --region tahoe      # review it at http://127.0.0.1:8787/
 ```
 
-`diff.mjs` compares geometry every 10 m, so the before layers need no OSM IDs. A stretch is **added** or **removed** when nothing of the same class lies within 20 m on the other side, and **changed** when its old class is gone there and a different class has taken its place; a new facility beside one that still exists counts as added. Differences shorter than 50 m are ignored (`--tolerance`, `--min-length`). With `--extract`, each change without OSM IDs lists the ways that run along at least 20% of it (or 150 m), or most of their own length, longest first. The review page shows each change on a map with its way IDs, and on request the tags and rule evidence behind it. `apply.mjs` starts from the before layers: an accepted addition is cut from its new way, an accepted removal is erased, and an accepted change does both; undecided and rejected changes leave the before layers untouched. Keep one decisions file per region and reuse it on later runs, so repeated changes keep their decision.
+Each region keeps its review data in `data/bicycle-overlays/<region>/`:
 
-**Accept or reject.** Accept applies the change. Reject leaves the before layers as they were, with a reason: **fix in OSM** (the tags are wrong; you will correct them) or **fix in the generator** (the rules are wrong; describe the fix in the note). A reject is never a permanent per-segment ignore: each decision records the diff it was made on (`run`), and a reject from an earlier run whose change shows up again is **Rejected earlier — still present** (the page says which reason). It shows the old note and asks again (re-deciding records the new run), and `apply.mjs` counts it as undecided and reports it as `recurring`. Accepts carry over. For a reject with reason OSM you can record the fix: tags to `key=value` set or `-key` remove (separated by spaces, commas or semicolons), the ways to change (from the change's list, the top-ranked by default) and a status of to do or uploaded. A valid fix gets an **Open in JOSM** link (JOSM remote control on 127.0.0.1:8111), and the page lists the fixes still to do. Each change also links to Google Maps (satellite) and to each way on openstreetmap.org.
+| Path             | Git       | Contents                                                                                                                         |
+| ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `decisions.json` | committed | one entry per change: `{decision, reason, run, note, osm_fix, at}`                                                               |
+| `live/`          | committed | `class-*.geojson` as published: refreshed from Mapbox datasets, or for regions without them a reviewed build with its `run.json` |
+| `candidate/`     | ignored   | the newest run: layers, the clipped `.osm.pbf`, `run.json`                                                                       |
+| `archive/<run>/` | ignored   | earlier candidates                                                                                                               |
+| `../downloads/`  | ignored   | Geofabrik extracts, shared by regions and reused until Geofabrik has newer ones                                                  |
 
-**Groups.** Changes with the same name (ignoring case) are listed as one group when their line endpoints are within 500 m of each other (`review.mjs --group-gap`), transitively; an unnamed change joins the named group it touches (endpoints within the diff's tolerance) unless it touches two differently named ones. The group has a combined summary, length and map view; cross streets that only touch mid-line stay separate, and the result does not depend on the order of the changes. Accepting, rejecting, noting or setting an OSM fix on a group applies to every member (one atomic request); expand a group to decide members individually, and it shows "mixed" when they disagree. A group's fix lists the union of its members' ways, and each member keeps only its own. Decisions are stored per change, so a later run can bring back only some members.
+The region's `src/appConfig/<region>.js` supplies the settings: `BICYCLE_OVERLAY_EXTRACTS` (Geofabrik paths), `BICYCLE_OVERLAY_OPTIONS` (as for `generate.mjs --region`, including the bbox the extracts are clipped to) and an `overlayClass` on each published `MAP_LAYERS` dataset. `download_and_build.mjs` needs [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`) to clip and merge the extracts. `review.mjs` refreshes `live/` from Mapbox first when `MAPBOX_SECRET_TOKEN` (a token with `datasets:read`) is in the environment or `.env`; commit `live/` when it changes. Regions whose layers are drawn in the Mapbox style (SF, Contra Costa) have no datasets: after publishing a build, copy its `class-*.geojson` and `run.json` into `live/`. `--before` and `--after` compare other directories, for example an archived run.
 
-The decisions file is `{"version": 2, "decisions": {"<change id>": {"decision": "accept" | "reject", "reason": "osm" | "generator", "run", "note", "osm_fix", "at"}}}`. Files from before (no version, `include` / `exclude`) are read as accept / reject with reason `osm`, and rewritten as version 2 on the next save. `apply.mjs` reads both and writes `accepted`, `rejected` (by reason), `recurring` and `undecided` to `applied.json`.
+**Changes.** Lines are compared every 10 m, so the live layers need no OSM IDs. A stretch is **added** or **removed** when nothing of the same class lies within 20 m (`--tolerance`) on the other side, and **changed** when another class has taken its place. Differences under 50 m (`--min-length`) are ignored. Each change lists the OSM ways along it. Changes with the same name whose ends are within 500 m (`--group-gap`) form a group that is decided together; expand it to decide members one by one.
+
+**Decisions.** **Accept** a change that is correct. **Reject** one that is wrong, with a reason: **fix in OSM** or **fix in the generator** (describe the fix in the note). An OSM reject can record the fix (`key=value` to set, `-key` to remove, the ways, and to do or uploaded), which gives an **Open in JOSM** link; the page lists the fixes still to do. Decisions save as you make them; commit them, so notes and fixes build up across runs. Accepts carry over to later runs. A reject is not a permanent ignore: if the change is still there in a later run, the page shows it as **rejected earlier, still present** and asks again.
 
 ## Hard surfaces and short network links
 

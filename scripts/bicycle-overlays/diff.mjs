@@ -1,27 +1,14 @@
-#!/usr/bin/env node
+// What changed between two sets of class layers: stretches added, removed, or moved to a
+// different class. Used by review.mjs. Matching is geometric, every 10 m along each line, so
+// it works whether or not the before layers carry OSM IDs. A stretch whose class differs is
+// reported once, as changed.
 import { spawnSync } from 'node:child_process';
 import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
-import { parseArgs } from 'node:util';
+import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const HELP = `List what changed between two sets of class layers: stretches added, removed, or moved
-to a different class.
-Usage: node scripts/bicycle-overlays/diff.mjs --before DIR --after DIR [options]
-  --before DIR          class-I..IV.geojson as published or previously generated; features
-                        need no OSM IDs (a snapshot of hand-maintained layers works)
-  --after DIR           any directory of class-*.geojson (a generate.mjs or old pipeline output)
-  --output FILE         write the changes as JSON
-  --extract FILE        the .osm/.osm.pbf the run used; lists the OSM ways each change
-                        without OSM IDs runs along, longest first
-  --python FILE         default: tool-local .venv/bin/python (needed with --extract)
-  --tolerance METRES    default 20: lines closer than this count as the same stretch
-  --min-length METRES   default 50: ignore shorter differences
-Matching is geometric, every 10 m along each line, so it works whether or not the before
-layers carry OSM IDs. A stretch whose class differs is reported once, as changed.
-`;
 
 export const CLASSES = ['I', 'II', 'III', 'IV'];
 export const STEP = 10;
@@ -91,41 +78,6 @@ export function isNear(grid, p, tolerance) {
           return true;
       }
   return false;
-}
-
-// Split a line part into the pieces where `keep(projectedPoint)` holds, judged every 10 m.
-// Pieces keep the original vertices between their ends, so cutting never reshapes a line.
-export function cutLine(part, keep, project) {
-  const pieces = [];
-  let piece = null;
-  const push = (p) => {
-    const last = piece[piece.length - 1];
-    if (!last || last[0] !== p[0] || last[1] !== p[1]) piece.push(p);
-  };
-  const close = () => {
-    if (piece?.length > 1) pieces.push(piece);
-    piece = null;
-  };
-  for (let i = 1; i < part.length; i++) {
-    const [a, b] = [part[i - 1], part[i]];
-    const [pa, pb] = [project(a), project(b)];
-    const n = Math.max(1, Math.round(Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) / STEP));
-    const at = (t) => [a[0] + t * (b[0] - a[0]), a[1] + t * (b[1] - a[1])];
-    for (let j = 0; j < n; j++) {
-      if (keep(project(at((j + 0.5) / n)))) {
-        if (!piece) {
-          piece = [];
-          push(j === 0 ? a : at(j / n));
-        }
-        if (j === n - 1) push(b);
-      } else if (piece) {
-        push(j === 0 ? a : at(j / n));
-        close();
-      }
-    }
-  }
-  close();
-  return pieces;
 }
 
 // Consecutive 10 m samples of a feature with no counterpart in `grid`, as stretches.
@@ -305,63 +257,53 @@ async function waysAlong(changes, extract, python) {
   }
 }
 
-async function main() {
-  const { values } = parseArgs({
-    options: {
-      before: { type: 'string' },
-      after: { type: 'string' },
-      output: { type: 'string' },
-      extract: { type: 'string' },
-      python: { type: 'string' },
-      tolerance: { type: 'string', default: '20' },
-      'min-length': { type: 'string', default: '50' },
-      help: { type: 'boolean' },
-    },
-  });
-  if (values.help) return console.log(HELP);
-  if (!values.before || !values.after)
-    throw new Error('--before and --after are required.');
-  const tolerance = Number(values.tolerance);
-  const minLength = Number(values['min-length']);
+// The diff of two layer directories. With `extract` (the .osm/.osm.pbf the after run used),
+// each change without OSM IDs lists the ways it runs along, longest first. `run` names the
+// diff in decisions (default: the after directory's name). `classes` limits both sides to the
+// classes a region publishes.
+export async function diffDirs(
+  beforeDir,
+  afterDir,
+  { run, classes, tolerance = 20, minLength = 50, extract, python } = {},
+) {
   if (!(tolerance > 0) || !(minLength >= 0))
     throw new Error('Invalid --tolerance or --min-length.');
-  const before = await readLayers(values.before);
-  const after = await readLayers(values.after);
+  const only = (layers) =>
+    classes?.length
+      ? Object.fromEntries(Object.entries(layers).filter(([k]) => classes.includes(k)))
+      : layers;
+  const before = only(await readLayers(beforeDir));
+  const after = only(await readLayers(afterDir));
   const changes = diffLayers(before, after, { tolerance, minLength });
-  if (values.extract) {
+  if (extract) {
     const missing = changes.filter((c) => !c.ways.length);
-    const python = path.resolve(values.python ?? path.join(HERE, '.venv/bin/python'));
-    const found = await waysAlong(missing, path.resolve(values.extract), python);
+    const found = await waysAlong(
+      missing,
+      path.resolve(extract),
+      path.resolve(python ?? path.join(HERE, '.venv/bin/python')),
+    );
     for (const c of missing) c.ways = found[c.id] ?? [];
   }
-  const summary = summarize(changes);
-  if (values.output)
-    await writeFile(
-      values.output,
-      JSON.stringify(
-        {
-          before: path.resolve(values.before),
-          after: path.resolve(values.after),
-          extract: values.extract ? path.resolve(values.extract) : null,
-          tolerance_m: tolerance,
-          min_length_m: minLength,
-          summary,
-          changes,
-        },
-        null,
-        1,
-      ) + '\n',
-    );
-  for (const type of ['added', 'removed', 'changed']) {
+  return {
+    diff: {
+      run: run ?? path.basename(path.resolve(afterDir)),
+      before: path.resolve(beforeDir),
+      after: path.resolve(afterDir),
+      extract: extract ? path.resolve(extract) : null,
+      tolerance_m: tolerance,
+      min_length_m: minLength,
+      summary: summarize(changes),
+      changes,
+    },
+    before,
+    after,
+  };
+}
+
+export const summaryLines = (summary) =>
+  ['added', 'removed', 'changed'].map((type) => {
     const cells = Object.entries(summary[type] ?? {})
       .map(([k, v]) => `${k.replace('>', '→')} ${v.count} (${v.km} km)`)
       .join(', ');
-    console.log(`${type.padEnd(8)} ${cells || 'none'}`);
-  }
-}
-
-if (import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href)
-  main().catch((error) => {
-    console.error(`Diff failed: ${error.message}`);
-    process.exitCode = 1;
+    return `${type.padEnd(8)} ${cells || 'none'}`;
   });

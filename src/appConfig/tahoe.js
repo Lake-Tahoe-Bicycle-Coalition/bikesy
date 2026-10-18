@@ -50,6 +50,11 @@ const config = {
     routeFallback: 'tags',
     bbox: [-120.375, 38.750276, -119.659482, 39.368232],
   },
+  // Geofabrik extracts for scripts/bicycle-overlays/download_and_build.mjs, clipped to the bbox above.
+  BICYCLE_OVERLAY_EXTRACTS: [
+    'north-america/us/california/norcal',
+    'north-america/us/nevada',
+  ],
   LOGO_FILENAME_ROOT: 'ltbc-logo',
   LOGO_CLASSNAME: 'logo ltbc-logo',
   MAPBOX_STYLE_URL: 'mapbox://styles/tahoebike/ck3cbc5z81vr71clhw1rfylmy',
@@ -166,6 +171,7 @@ const config = {
         },
       },
       datasetId: 'tahoebike/cl1sw0vau1rmm28rs0zwud8el',
+      overlayClass: 'I', // compared with class-I.geojson by bicycle-overlays/review.mjs
       isInitiallyChecked: true,
     },
     {
@@ -182,6 +188,7 @@ const config = {
         },
       },
       datasetId: 'tahoebike/cl1swsss40zax2emy7z7isg57',
+      overlayClass: 'II', // compared with class-II.geojson by bicycle-overlays/review.mjs
       isInitiallyChecked: true,
     },
     {
@@ -199,6 +206,7 @@ const config = {
         },
       },
       datasetId: 'tahoebike/cl1swuzh0265221qxzoua365u',
+      overlayClass: 'III', // compared with class-III.geojson by bicycle-overlays/review.mjs
       isInitiallyChecked: true,
     },
     {
