@@ -9,9 +9,9 @@ Run the commands from the repository root. You don't run `generate.mjs` yourself
 1. **Build:** `node scripts/bicycle-overlays/download_and_build.mjs --region tahoe` downloads the region's OSM extracts and generates a candidate.
 2. **Review:** `node scripts/bicycle-overlays/review.mjs --region tahoe` compares the candidate with the live layers. Accept or reject each change at http://127.0.0.1:8787/.
 3. **Fix and repeat:** for each reject, fix the tags in OSM or the rules in the generator, then build and review again. Decisions carry over, so only new or still-wrong changes need attention.
-4. **Publish** once every change is accepted: upload the candidate's `class-*.geojson` to the region's Mapbox datasets (Tahoe), or copy them and `run.json` into `live/` (regions without datasets). Commit `decisions.json` and `live/`.
+4. **Publish** once every change is accepted: upload the candidate's `class-*.geojson` to the region's Mapbox datasets (Tahoe), then commit `decisions.json` and `live/`. For SF and Contra Costa, copy the published candidate's `class-*.geojson` and `run.json` into your local `live/`.
 
-First-time setup: the Python environment under [Run locally](#run-locally) and [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`). Details are under [Reviewing changes before publishing](#reviewing-changes-before-publishing).
+First-time setup: the Python environment under [Run locally](#run-locally) and [osmium-tool](https://osmcode.org/osmium-tool/) (`brew install osmium-tool`). SF and Contra Costa draw their layers in the Mapbox style, so there are no datasets to compare with, and their baselines (about 50 MB each) are not committed: build your own once with `download_and_build.mjs --region sf --baseline`, which makes that build the live layers. Later builds are compared with it. Details are under [Reviewing changes before publishing](#reviewing-changes-before-publishing).
 
 ## Generator package
 
@@ -53,15 +53,15 @@ Rejected changes are fixed at the source, in OSM or in the generator rules, and 
 
 Each region keeps its review data in `data/bicycle-overlays/<region>/`:
 
-| Path             | Git       | Contents                                                                                                                         |
-| ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `decisions.json` | committed | one entry per change: `{decision, reason, run, note, osm_fix, at}`                                                               |
-| `live/`          | committed | `class-*.geojson` as published: refreshed from Mapbox datasets, or for regions without them a reviewed build with its `run.json` |
-| `candidate/`     | ignored   | the newest run: layers, the clipped `.osm.pbf`, `run.json`                                                                       |
-| `archive/<run>/` | ignored   | earlier candidates                                                                                                               |
-| `../downloads/`  | ignored   | Geofabrik extracts, shared by regions and reused until Geofabrik has newer ones                                                  |
+| Path             | Git       | Contents                                                                                                                                                 |
+| ---------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `decisions.json` | committed | one entry per change: `{decision, reason, run, note, osm_fix, at}`                                                                                       |
+| `live/`          | committed | `class-*.geojson` as published, refreshed from Mapbox datasets; for SF and Contra Costa, an ignored local baseline from `--baseline` with its `run.json` |
+| `candidate/`     | ignored   | the newest run: layers, the clipped `.osm.pbf`, `run.json`                                                                                               |
+| `archive/<run>/` | ignored   | earlier candidates                                                                                                                                       |
+| `../downloads/`  | ignored   | Geofabrik extracts, shared by regions and reused until Geofabrik has newer ones                                                                          |
 
-The region's `src/appConfig/<region>.js` supplies the settings: `BICYCLE_OVERLAY_EXTRACTS` (Geofabrik paths), `BICYCLE_OVERLAY_OPTIONS` (as for `generate.mjs --region`, including the bbox the extracts are clipped to) and an `overlayClass` on each published `MAP_LAYERS` dataset. `download_and_build.mjs` uses osmium-tool to clip and merge the extracts. `review.mjs` refreshes `live/` from Mapbox first when `MAPBOX_SECRET_TOKEN` (a token with `datasets:read`) is in the environment or `.env`; commit `live/` when it changes. Regions whose layers are drawn in the Mapbox style (SF, Contra Costa) have no datasets: after publishing a build, copy its `class-*.geojson` and `run.json` into `live/`. `--before` and `--after` compare other directories, for example an archived run.
+The region's `src/appConfig/<region>.js` supplies the settings: `BICYCLE_OVERLAY_EXTRACTS` (Geofabrik paths), `BICYCLE_OVERLAY_OPTIONS` (as for `generate.mjs --region`, including the bbox the extracts are clipped to) and an `overlayClass` on each published `MAP_LAYERS` dataset. `download_and_build.mjs` uses osmium-tool to clip and merge the extracts. `review.mjs` refreshes `live/` from Mapbox first when `MAPBOX_SECRET_TOKEN` (a token with `datasets:read`) is in the environment or `.env`; commit `live/` when it changes. `review.mjs` prints the baseline's run name and build time when `live/` has a `run.json`; `download_and_build.mjs --baseline` moves the baseline forward. `--before` and `--after` compare other directories, for example an archived run.
 
 **Changes.** Lines are compared every 10 m, so the live layers need no OSM IDs. A stretch is **added** or **removed** when nothing of the same class lies within 20 m (`--tolerance`) on the other side, and **changed** when another class has taken its place. Differences under 50 m (`--min-length`) are ignored. Each change lists the OSM ways along it. Changes with the same name whose ends are within 500 m (`--group-gap`) form a group that is decided together; expand it to decide members one by one.
 

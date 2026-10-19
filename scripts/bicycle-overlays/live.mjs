@@ -1,5 +1,6 @@
-// Refresh data/bicycle-overlays/<region>/live from the region's Mapbox datasets.
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+// data/bicycle-overlays/<region>/live: refreshed from the region's Mapbox datasets, or for
+// regions without them (drawn in the Mapbox style) replaced by a build.
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const API = 'https://api.mapbox.com/datasets/v1';
@@ -45,4 +46,13 @@ export async function refreshLive(datasets, dir, token) {
     changed.push(klass);
   }
   return changed;
+}
+
+// Make a build the live baseline: its class-*.geojson and run.json replace live/.
+export async function buildToLive(buildDir, dir) {
+  await rm(dir, { recursive: true, force: true });
+  await mkdir(dir, { recursive: true });
+  for (const file of await readdir(buildDir))
+    if (/^class-.*\.geojson$/.test(file) || file === 'run.json')
+      await copyFile(path.join(buildDir, file), path.join(dir, file));
 }

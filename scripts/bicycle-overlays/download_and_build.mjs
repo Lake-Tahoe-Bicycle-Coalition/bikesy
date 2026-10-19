@@ -6,14 +6,17 @@ import { mkdir, open, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
+import { buildToLive } from './live.mjs';
 import { loadRegion, readRun, regionPaths } from './region.mjs';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const GEOFABRIK = 'https://download.geofabrik.de';
 const HELP = `Build a new candidate for review: download the region's OSM extracts, clip them to the
 overlay bounds and run generate.mjs.
-Usage: node scripts/bicycle-overlays/download_and_build.mjs --region NAME
+Usage: node scripts/bicycle-overlays/download_and_build.mjs --region NAME [--baseline]
   --region NAME   src/appConfig/NAME.js lists BICYCLE_OVERLAY_EXTRACTS (Geofabrik paths)
+  --baseline      also make the build the live baseline (live/), for regions whose layers
+                  are drawn in the Mapbox style and so cannot be downloaded
 Extracts are kept in data/bicycle-overlays/downloads (shared by regions) and downloaded again only when
 Geofabrik has a newer one (md5 differs). The new candidate goes to candidate/; the previous
 one moves to archive/<its run>/. Requires osmium-tool (brew install osmium-tool) and the
@@ -125,7 +128,11 @@ const stamp = (date) => {
 
 async function main() {
   const { values } = parseArgs({
-    options: { region: { type: 'string' }, help: { type: 'boolean' } },
+    options: {
+      region: { type: 'string' },
+      baseline: { type: 'boolean' },
+      help: { type: 'boolean' },
+    },
   });
   if (values.help) return console.log(HELP);
   const region = await loadRegion(values.region);
@@ -204,9 +211,15 @@ async function main() {
   console.log(
     `New candidate ${name} in ${path.relative(process.cwd(), paths.candidate)}`,
   );
-  console.log(
-    `Review it: node scripts/bicycle-overlays/review.mjs --region ${region.name}`,
-  );
+  if (values.baseline) {
+    await buildToLive(paths.candidate, paths.live);
+    console.log(
+      `Copied it to ${path.relative(process.cwd(), paths.live)} as the live baseline`,
+    );
+  } else
+    console.log(
+      `Review it: node scripts/bicycle-overlays/review.mjs --region ${region.name}`,
+    );
 }
 
 main().catch((error) => {

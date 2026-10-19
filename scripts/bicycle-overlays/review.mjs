@@ -108,7 +108,7 @@ async function main() {
     const token = await secretToken();
     if (!Object.keys(region.datasets).length)
       console.log(
-        `${region.name} has no MAP_LAYERS with an overlayClass: live/ is not refreshed, so put the published class-*.geojson there yourself.`,
+        `${region.name} has no Mapbox datasets (MAP_LAYERS with an overlayClass): live/ is the baseline built with download_and_build.mjs --baseline.`,
       );
     else if (!token)
       console.log('MAPBOX_SECRET_TOKEN is not set: using live/ as committed.');
@@ -128,6 +128,17 @@ async function main() {
   }
   const beforeDir = values.before ?? paths.live;
   const afterDir = values.after ?? paths.candidate;
+  if (
+    !values.before &&
+    !(await readdir(beforeDir).catch(() => [])).some((f) => f.startsWith('class-'))
+  )
+    throw new Error(
+      `No live layers in ${path.relative(process.cwd(), beforeDir)}. ${
+        Object.keys(region.datasets).length
+          ? 'Set MAPBOX_SECRET_TOKEN to download them from Mapbox.'
+          : `Build a baseline: node scripts/bicycle-overlays/download_and_build.mjs --region ${region.name} --baseline`
+      }`,
+    );
   // A live/ built by download_and_build.mjs (regions without Mapbox datasets) has a run.json.
   const liveRun = await readRun(beforeDir);
   if (liveRun)

@@ -46,8 +46,11 @@ next-env.d.ts
 # Local-only overlay comparison tools and reports
 /local-tools/bicycle-overlay-comparison/
 
-# bicycle overlay review: only decisions.json and live/ are committed
+# bicycle overlay review: only decisions.json and live/ are committed, except the Bay Area
+# baselines (about 50 MB each; developers build their own with --baseline)
 /data/bicycle-overlays/*/candidate/
 /data/bicycle-overlays/*/archive/
 /data/bicycle-overlays/downloads/
 /data/bicycle-overlays/*/building/
+/data/bicycle-overlays/sf/live/
+/data/bicycle-overlays/contracosta/live/
