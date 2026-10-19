@@ -1,0 +1,729 @@
+{
+  "added:->I::-119.7461,39.1281": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:09:48.398Z"
+  },
+  "added:->I::-119.7465,39.1482": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:21.162Z"
+  },
+  "added:->I::-119.7472,39.1373": {
+    "decision": "accept",
+    "note": "Trust OSM",
+    "at": "2026-10-15T04:06:57.988Z",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "added:->I::-119.7474,39.1247": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "trust OSM",
+    "at": "2026-10-15T07:09:48.397Z"
+  },
+  "added:->I::-119.7548,38.9513": {
+    "decision": "accept",
+    "note": "New construction",
+    "at": "2026-10-14T23:49:05.440Z",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "added:->I::-119.7574,39.1898": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:38:42.054Z"
+  },
+  "added:->I::-119.7623,38.9567": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:26:12.437Z"
+  },
+  "added:->I::-119.7669,39.1524": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:31:31.989Z"
+  },
+  "added:->I::-119.7670,39.1482": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:06:07.941Z"
+  },
+  "added:->I::-119.7670,39.1507": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:36:07.374Z"
+  },
+  "added:->I::-119.7682,39.1421": {
+    "decision": "accept",
+    "note": "Trust OSM",
+    "at": "2026-10-15T04:18:22.214Z",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "added:->I::-119.7697,39.1330": {
+    "decision": "accept",
+    "note": "Trust OSM",
+    "at": "2026-10-15T04:18:11.341Z",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "added:->I::-119.7774,39.1733": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:24:43.834Z"
+  },
+  "added:->I::-119.7818,39.1734": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:24:13.871Z"
+  },
+  "added:->I::-119.9437,39.2449": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:43:23.204Z"
+  },
+  "added:->I::-119.9495,39.2494": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "This seems like a bike path but there are actually \"No bikes\" signs along this path. Probably need to change to bicycles=no. Need to also investigate the other nearby paths for these signs.\n\n[Claude, 2026-10-15] Way 1196987478 has no name: highway=cycleway, bicycle=designated, foot=yes, surface=asphalt. Steve L Smith created it on 2023-08-11 (https://www.openstreetmap.org/changeset/139731592, Bing imagery), so the designation came from armchair mapping. It runs as a sidepath on the south side of Tahoe Blvd (SR 28) through the Incline Village core (Raley's / Village Center), then turns south along Southwood Blvd. Nearby bike-tagged paths from the same mapping, which may carry the same signs: cycleway + bicycle=designated 414240958, 414240959 (Village Blvd), 414240964 (Northwood Blvd), 414240956 (Southwood Blvd) and 414240955 (near Incline Way); cycleway + bicycle=yes 414240943 (Southwood); footways with bicycle=yes 414240944, 414240952, 414240954, 414240957 and 414240946 (Village Blvd sidewalk). Not verified: which of these have 'No bikes' signs.\nSuggested: Retag 1196987478 as highway=footway + bicycle=no (if signed). Check the listed paths.",
+    "at": "2026-10-18T17:20:15.987Z"
+  },
+  "added:->I::-119.9638,39.2473": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:28.470Z"
+  },
+  "added:->I::-119.9762,38.9395": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "at": "2026-10-18T17:23:12.129Z"
+  },
+  "added:->I::-119.9911,38.9034": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "No. This is a service road that bicycles arent allowed on west of the river\n\n[Claude, 2026-10-15] Verified: way 290243618 (cycleway) used to end at ford node 441510781 on the Upper Truckee River. quincylvania extended it about 75 m west to airport gate node 11999312221 (barrier=gate, access=private) on 2024-06-21 (https://www.openstreetmap.org/changeset/153001956). That extension is the stub that now shows as Class I.\nSuggested: Split 290243618 at node 441510781. Retag the west stub as highway=service + access=private/bicycle=no, or delete it.",
+    "at": "2026-10-18T17:24:07.013Z"
+  },
+  "added:->I::-120.0049,38.9132": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:43:58.657Z"
+  },
+  "added:->I::-120.0062,38.9128": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:45:05.068Z"
+  },
+  "added:->I::-120.0095,38.9109": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "For sure exists. Not sure why this wasnt linked to the other segments of this path.\n\n[Claude, 2026-10-15] Verified: btwhite92 retagged way 472846728 from a dirt path to highway=footway + footway=sidewalk + bicycle=designated + surface=asphalt on 2024-08-05 (https://www.openstreetmap.org/changeset/154854299, Lake Tahoe Blvd road diet). That edit postdates the live map. In OSM it is connected at both ends, to crossings 472846726 and 1305758714 (both bicycle=designated and paved). It looks unlinked only because the diff shows the new piece by itself.\nSuggested: None.",
+    "at": "2026-10-15T08:05:00.660Z"
+  },
+  "added:->I::-120.0115,38.9087": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "That's for sure there!",
+    "at": "2026-10-15T07:23:58.648Z"
+  },
+  "added:->I::-120.0181,39.2345": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:31:20.570Z"
+  },
+  "added:->I::-120.0257,38.8578": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "I also commented on another Way, perhaps there are duplicates. This is mostly correct, but I'd like to split it to show the portion west of the parking lot as Class 1 and through the parking lot as Class 3.\n\n[Claude, 2026-10-15] Verified: this is cycleway 1422146572, which sltxc created on 2025-08-13 (https://www.openstreetmap.org/changeset/170405091). It is not a duplicate. The chain runs end to end: W San Bernardino Ave 341645476, then cycleway 341645506, then bridge 1422146573, then 1422146572, which ends at node 783788436, where E San Bernardino Ave 10331807 and parking aisle 1225243105 start. The lot spans about lon -120.0263 to -120.0247, so only the first ~30 m of 1422146572 is west of the lot. Leftovers: 1422146572 still has lcn=proposed, and bridge 1422146573 still has proposed=cycleway + lcn=proposed. Your changeset 190483036 (https://www.openstreetmap.org/changeset/190483036) also added segregated=no to residential roads 341645476 and 10331807 and to about 40 nodes, including stop sign 13025787375. That looks like an accidental tag paste.\nSuggested: Split 1422146572 at about -120.0263. Make the lot piece Class III (e.g. service + lcn=yes) or drop it and put lcn=yes on the aisle. Remove the proposed tags and the stray segregated=no.",
+    "at": "2026-10-18T17:20:41.572Z"
+  },
+  "added:->I::-120.0287,38.8564": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "This is mostly correct, but should be updated to reflect that the class 1 path terminates at the west end of the parking lot. I think we should show Class 3 through the parking lot for connection.\n\n[Claude, 2026-10-15] Verified: this is way 341645506 (W San Bernardino Ave to the west end of the bridge, about 284 m). It was highway=proposed until sltxc made it a cycleway on 2025-08-13 (https://www.openstreetmap.org/changeset/170405091). You removed the leftover proposed=cycleway on 2026-10-14. It lies entirely west of the parking lot and doesn't overlap 1422146572, so the split you want belongs on 1422146572 (see the -120.0257 entry).\nSuggested: 341645506 could be Accepted. Do the parking-lot split on 1422146572.",
+    "at": "2026-10-18T17:17:33.227Z"
+  },
+  "added:->I::-120.0403,38.9363": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "New construction",
+    "at": "2026-10-15T07:24:37.472Z"
+  },
+  "added:->I::-120.0410,38.9356": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Confirmed in google maps satellite",
+    "at": "2026-10-15T07:38:36.029Z"
+  },
+  "added:->I::-120.0651,38.9414": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "at": "2026-10-18T17:21:43.359Z"
+  },
+  "added:->I::-120.0653,38.9374": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Almost perfect, but I think the way geometry could be adjusted so that there is no gap between the class 1 and 2 segments. They are correctly positioned laterally, but the start and end could change a bit.\n\n[Claude, 2026-10-15] Verified: in OSM there is no gap. Cycleway 1091097181 ends at node 9247397978, which is also the first node of the Class II way 1001925007 (Baldwin Beach Road). Its south end, node 9247347752, lies on cycleway 814344653, whose name is misspelled 'Bladwin Beach Road'. The ~8 m gap on the review map comes from diff simplification. In the pipeline output, both lines meet at -120.06583, 38.93856.\nSuggested: No OSM fix is needed at the Class I/II junction (could switch to Accept). Optionally fix the 'Bladwin' typo on 814344653.",
+    "at": "2026-10-18T17:21:43.359Z"
+  },
+  "added:->I::-120.1110,39.2806": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "This should be tied to the other segment of the Martis Valley Trail. If one is accepted they both should be. I think this probably exists, checking with Ian.\n\n[Claude, 2026-10-15] Way 1535223970 (highway=cycleway, surface=asphalt, foot=yes, no name, no bicycle tag) was created by btwhite92 on 2026-07-04 (https://www.openstreetmap.org/changeset/185098085, 'Trail cleanup; Northstar bike park', Strava heatmap/survey). Its west end shares node 13988339156 with Martis Valley Trail 1531091796, so the two are connected. Its east end meets Highlands View Road.\nSuggested: Decide together with the Martis Valley Trail segment. Optionally add name + bicycle/foot=designated.\n\nThe Martis Valley trail is confirmed to exist, so this should also exist and be named the same as the Martis Valley Trail.",
+    "at": "2026-10-18T17:08:55.719Z"
+  },
+  "added:->I::-120.1457,39.1626": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:44.889Z"
+  },
+  "added:->I::-120.1575,39.3244": {
+    "decision": "accept",
+    "note": "new construction class 1",
+    "at": "2026-10-15T04:13:56.493Z",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "added:->I::-120.1580,39.3197": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:34:28.714Z"
+  },
+  "added:->I::-120.1735,39.3344": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:34:58.955Z"
+  },
+  "added:->I::-120.1787,39.3262": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Verified in Street View. There is a small bike route sign, but it's otherwise not a safe bike route, so better to just leave that off, and let the multi-use path carry bikes",
+    "at": "2026-10-15T07:21:57.761Z"
+  },
+  "added:->I::-120.1816,39.3261": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:30:10.186Z"
+  },
+  "added:->I::-120.1870,39.3250": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:45:17.891Z"
+  },
+  "added:->I::-120.1872,39.3246": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:57.228Z"
+  },
+  "added:->I::-120.3849,38.8931": {
+    "decision": "reject",
+    "reason": "generator",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Let's try to adjust the western side of the search bounds so that this trail is excluded from the Tahoe Bike Map, but we still get the Donner Pass Rd bike lane near Truckee.",
+    "at": "2026-10-18T17:12:40.349Z"
+  },
+  "added:->I:Campground Bike:-119.9739,38.9448": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "There definitely is a bike path here. I'd like to try to refine the coordinates later, but this is better than nothing. It was closed during rec center construction but is now open again",
+    "at": "2026-10-15T07:23:39.448Z"
+  },
+  "added:->I:Campground Bike:-119.9758,38.9441": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "There definitely is a bike path here. I'd like to try to refine the coordinates later, but this is better than nothing. It was closed during rec center construction but is now open again",
+    "at": "2026-10-15T07:23:39.448Z"
+  },
+  "added:->I:Campground Bike:-119.9766,38.9414": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "There definitely is a bike path here. I'd like to try to refine the coordinates later, but this is better than nothing. It was closed during rec center construction but is now open again",
+    "at": "2026-10-15T07:23:39.448Z"
+  },
+  "added:->I:Kingsbury South/Stagecoach Access:-119.8857,38.9587": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "This is dirt\n\n[Claude, 2026-10-15] Verified: way 736380934 (highway=path, bicycle=designated) was created with surface=dirt in 2019. Balooog changed it to surface=asphalt on 2024-12-03 (v3, https://www.openstreetmap.org/changeset/159887024, StreetComplete AddPathSurface quest, source=survey). That edit is the only reason it now counts as paved Class I. It is still surface=asphalt in v4 (2025-08-29). Not verified: whether any part of it is paved. Balooog made a dozen other StreetComplete edits on Kingsbury Grade within minutes, so they were likely there in person, but StreetComplete asks once per way, and the answer may reflect only the paved end they could see.\nSuggested: Set surface=dirt on 736380934 (or split it if part is paved). Consider commenting on changeset 159887024.\n\n[Nick] I looked closer and confirmed this is dirt based on local knowledge. We should undo the asphalt change and revert it to dirt.",
+    "at": "2026-10-18T17:16:41.981Z"
+  },
+  "added:->I:Lakefront Interpretive Trail:-120.1129,39.0516": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Might as well trust OSM I guess",
+    "at": "2026-10-15T07:11:05.741Z"
+  },
+  "added:->I:Martis Valley Trail:-120.1117,39.3014": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Ian confirmed this is all constructed.",
+    "at": "2026-10-15T15:24:09.546Z"
+  },
+  "added:->I:Martis Valley Trail:-120.1118,39.2795": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Ian confirmed this is all constructed.",
+    "at": "2026-10-15T15:24:09.547Z"
+  },
+  "added:->I:Park Path:-119.9481,38.9572": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Confirmed from memory",
+    "at": "2026-10-15T07:38:01.597Z"
+  },
+  "added:->I:Rod Beaudry Trail:-120.1147,39.0529": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Not sure about this. Need to look at it. From street view from the road it looks paved on both sides. Possibly consider adding the campground trail too.\n\n[Claude, 2026-10-15] Way 1108457225 (created 2022 as a footway) was retagged path + bicycle/foot=designated + surface=asphalt + name=Rod Beaudry Trail in the same 2026-06-15 changeset (https://www.openstreetmap.org/changeset/184146826). It is the south end of the trail and meets the state park road 376167062. The paved Lakefront Interpretive Trail (376167052) is nearby.\nSuggested: Accept with the -120.1163 segment.",
+    "at": "2026-10-18T17:17:02.984Z"
+  },
+  "added:->I:Rod Beaudry Trail:-120.1163,39.0570": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Not sure about this. Need to look at it. From street view from the road it looks paved on both sides. Possibly consider adding the campground trail too.\n\n[Claude, 2026-10-15] Way 515091641 was a bare highway=footway from 2017 until btwhite92 retagged it on 2026-06-15 (https://www.openstreetmap.org/changeset/184146826, Sugar Pine State Park work, source Bing/USGS 3DEP/survey): highway=path, name=Rod Beaudry Trail, bicycle/foot=designated, horse=yes, surface=asphalt, operator=California State Parks. That fits your Street View observation that it is paved. The campground trail is probably 515092194 (about 1.3 km west through dukMé?em wáta / former General Creek Campground to the West Shore Trail) and the parallel 515092195 (about 1.7 km). Both are bare highway=path with no surface or bicycle tags. Not verified: whether they are paved.\nSuggested: Accept. If the campground paths are paved and open to bikes, tag surface + bicycle on 515092194/515092195.",
+    "at": "2026-10-18T17:17:02.984Z"
+  },
+  "added:->I:SR 89 Trail:-120.1707,39.3441": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Realigned path validated in imagery",
+    "at": "2026-10-15T07:37:47.235Z"
+  },
+  "added:->I:Tahoe East Shore Trail:-119.9298,39.2010": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:58.198Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.1836,39.3248": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:57.228Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.1864,39.3244": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:57.228Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.1921,39.3206": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "new construction class 1",
+    "at": "2026-10-15T07:05:57.228Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.1980,39.3172": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:57.228Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.2198,39.3216": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "new construction",
+    "at": "2026-10-15T07:05:31.346Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.2268,39.3220": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:31.346Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.2277,39.3234": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:31.346Z"
+  },
+  "added:->I:Truckee River Legacy Trail:-120.2306,39.3244": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:05:31.346Z"
+  },
+  "added:->I:Union Valley Bike Trail:-120.4149,38.8792": {
+    "decision": "reject",
+    "reason": "generator",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Let's try to adjust the western side of the search bounds so that this trail is excluded from the Tahoe Bike Map, but we still get the Donner Pass Rd bike lane near Truckee.",
+    "at": "2026-10-18T17:12:40.349Z"
+  },
+  "added:->I:Union Valley Bike Trail:-120.4150,38.8793": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "This is a dirt trail, so shouldn't be counted as Class 1\n\n[Claude, 2026-10-14] OSM way 124008506 is currently highway=cycleway + surface=asphalt, added 2026-04-17 by DEMacIII in changeset 181478715 (https://www.openstreetmap.org/changeset/181478715), along with the name; that's why the old pipeline counts it as paved Class I. Not yet verified: check imagery / Google Maps before changing to surface=dirt, and consider asking DEMacIII on that changeset. Its midpoint is also west of the map search bounds (left edge -120.3998); it is only in the extract because whole ways crossing the bbox are kept.\n\n[Nick] hmm actually I'm less sure about this. Might not be dirt, but might be. Not sure about this one as it's far from Tahoe. I think we'd want to adjust our search bounds to exclude it and the other segment along Union Valley reservoir from the tahoe bike map, even if this is a class 1.\n\n[Claude, 2026-10-15] Way 124008506 is unchanged since the note above. Web sources suggest it is paved: TrailLink describes the Union Valley Bike Trail as a paved two-lane asphalt route linking the reservoir's east-shore campgrounds (https://www.traillink.com/trail/union-valley-bike-trail/), and SMUD announced more paved segments in 2021 (https://www.smud.org/Corporate/About-us/News-and-Media/2021/2021/SMUD-begins-construction-on-bike-trail-in-the-Crystal-Basin-Recreation-Area). So surface=asphalt is probably right and surface=dirt probably wrong; not checked against imagery. On bounds: the old bikesy-server README's Tahoe bbox had left=-120.345042. On 2026-10-13 we widened the overlay bbox to -120.399814 to match SEARCH_BOUNDS.LEFT, which Tyler Alves set in Jan 2026 (#49) only to keep Google autocomplete in the Tahoe area. That widening is what brought Union Valley in. A rectangle can't cleanly exclude it, because Class II Donner Pass Road reaches west to -120.392 while the Union Valley cycleways reach east to -120.379. Options: give BICYCLE_OVERLAY_OPTIONS its own bbox with LEFT about -120.375 (generate.mjs keeps any way with at least one node inside, so Donner Pass Road survives and both Union Valley ways drop out), or clip to a polygon.\nSuggested: Don't change surface in OSM. Change this to reject with reason 'generator', clear the osm_fix surface=dirt, and set an overlay-only bbox.",
+    "osm_fix": {
+      "tags": "surface=dirt",
+      "ways": [
+        124008506
+      ],
+      "status": "todo"
+    },
+    "at": "2026-10-15T08:05:00.662Z"
+  },
+  "added:->II::-120.0671,38.9418": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "I've ridden this",
+    "at": "2026-10-15T07:24:55.839Z"
+  },
+  "added:->II:Baldwin Beach Road:-120.0657,38.9397": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Almost perfect, but I think the way geometry could be adjusted so that there is no gap between the class 1 and 2 segments. They are correctly positioned laterally, but the start and end could change a bit.\n\n[Claude, 2026-10-15] Verified: way 1001925007 (cycleway=lane, created by you in 2021, https://www.openstreetmap.org/changeset/113718961; 010ender56 added surface=asphalt on 2026-10-11) shares its south node with Class I cycleway 1091097181, so there is no gap there. At the north end there is a real gap of about 12 m. From node 11930868912, way 1286295294 (Baldwin Beach Road, no bike tags) runs to roundabout cycleway ring 1001925004. That ring had no surface tag in the extract. You added one on 2026-10-14 (https://www.openstreetmap.org/changeset/190482819), so it will appear as Class I next run.\nSuggested: To close the gap, add cycleway=lane to 1286295294 or extend 1001925007 to node 9247397964. Otherwise this could switch to Accept.",
+    "at": "2026-10-18T17:21:43.359Z"
+  },
+  "added:->II:Clear Creek Avenue:-119.7623,39.1176": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:31:57.880Z"
+  },
+  "added:->II:Donner Pass Road:-120.3033,39.3259": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:42.311Z"
+  },
+  "added:->II:Donner Pass Road:-120.3107,39.3255": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Verified in Street View. it is a class 2",
+    "at": "2026-10-15T07:04:42.311Z"
+  },
+  "added:->II:Donner Pass Road:-120.3163,39.3194": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Confirmed in Street View that it is a class 2",
+    "at": "2026-10-15T07:04:42.311Z"
+  },
+  "added:->II:Donner Pass Road:-120.3228,39.3182": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:42.311Z"
+  },
+  "added:->II:Donner Pass Road:-120.3300,39.3175": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:42.311Z"
+  },
+  "added:->II:Donner Pass Road:-120.3413,39.3140": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Verified on Street View that this is a bike lane",
+    "at": "2026-10-15T07:04:42.311Z"
+  },
+  "added:->II:Donner Pass Road:-120.3699,39.3237": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Confirmed this bike lane actually exists.",
+    "at": "2026-10-15T07:04:42.310Z"
+  },
+  "added:->II:Herbert Avenue:-119.9573,38.9357": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "at": "2026-10-18T17:16:51.430Z"
+  },
+  "added:->II:Little Lane:-119.7553,39.1574": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:12:55.529Z"
+  },
+  "added:->II:Soaring Way:-120.1495,39.3181": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:22:40.541Z"
+  },
+  "added:->II:Soaring Way:-120.1530,39.3196": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:22:40.541Z"
+  },
+  "added:->II:Soaring Way:-120.1543,39.3202": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:22:40.541Z"
+  },
+  "added:->II:Soaring Way:-120.1565,39.3204": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:22:40.541Z"
+  },
+  "added:->II:South Carson Street:-119.7707,39.1279": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:30.977Z"
+  },
+  "added:->II:South Carson Street:-119.7708,39.1269": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:30.977Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1331,39.0684": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "I don't know about this one. Seems like a narrow shoulder. Is there a bike lane? Check the OSM history\n\nI should come back and do a broader audit of the bike lane continuity along this highway for the full west shore\n\n[Claude, 2026-10-15] History of way 538595792: btwhite92 created it 2017-11-05 with cycleway=lane (https://www.openstreetmap.org/changeset/53540237, survey). He removed the lane 2019-11-28 in a 276-way 'Rural highway road class fixes' batch (https://www.openstreetmap.org/changeset/77656666). You re-added it on 2021-11-18 (https://www.openstreetmap.org/changeset/113924895, 'Add bike lane through Homewood area, per TRPA transportation map'). The northern neighbour 10487636 has the same history. The southern neighbour 538595790 is cycleway=no, so the lane ends here. Not verified: whether it is a striped lane or just a shoulder. The only sources are TRPA GIS and a 2017 survey.\nSuggested: Keep accept if TRPA still shows a lane. Include it in the west-shore continuity audit.",
+    "at": "2026-10-15T08:05:00.665Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1468,39.0747": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Can't verify but sure, seems plausible",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1569,39.1334": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1583,39.0817": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1588,39.1178": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Can't verify, but sure. Seems plausible",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1600,39.1303": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1626,39.1049": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->II:West Lake Boulevard:-120.1636,39.0997": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "added:->III:East San Bernardino Avenue:-120.0223,38.8579": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "at": "2026-10-18T17:20:38.063Z"
+  },
+  "added:->III:Helen Avenue:-119.9995,38.9146": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:31:51.577Z"
+  },
+  "added:->III:Venice Drive East:-120.0040,38.9300": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "These are indeed class 3. Noting fix in OSM just to confirm that all of Venice Drive east of Tahoe Keys blvd is marked as Class 3.\n\n[Claude, 2026-10-15] Verified: Venice Drive East ways 62150983 and 62150984 have cycleway=shared_lane + bicycle=designated + lcn=yes, which you set in 2021 (https://www.openstreetmap.org/changeset/113719879). They have no surface tag, and they are not in any route relation. The old pipeline surface-filtered on-road ways, so it dropped them. This run doesn't, so they appear now. Venice Drive 10329328 further east is tagged the same way. The one inconsistency is the intersection stubs 866063214 and 866063215, which have cycleway:right=shared_lane and match neither class. That leaves a gap of about 10 m at Keys Blvd.\nSuggested: Could switch to Accept. Optionally add surface=asphalt, and fix stubs 866063214/866063215 (cycleway=shared_lane + lcn=yes).",
+    "at": "2026-10-18T17:23:34.180Z"
+  },
+  "added:->III:Venice Drive East:-120.0042,38.9300": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "These are indeed class 3. Noting fix in OSM just to confirm that all of Venice Drive east of Tahoe Keys blvd is marked as Class 3.\n\n[Claude, 2026-10-15] Same as the other Venice Drive East entry (this is the opposite carriageway). Both ways are tagged consistently. Only the intersection stubs 866063214 and 866063215 leave a gap of about 10 m.\nSuggested: Could switch to Accept. Optionally fix the stubs.",
+    "at": "2026-10-18T17:23:34.180Z"
+  },
+  "added:->III:West San Bernardino Avenue:-120.0333,38.8558": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "at": "2026-10-18T17:17:33.227Z"
+  },
+  "changed:II>I::-120.1747,39.3345": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:34:58.955Z"
+  },
+  "changed:II>III:Helen Avenue:-119.9980,38.9156": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:31:51.577Z"
+  },
+  "changed:II>III:Pioneer Trail:-119.9529,38.9398": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "I thinks this is already fixed in OSM",
+    "at": "2026-10-18T17:09:37.299Z"
+  },
+  "changed:II>III:Pioneer Trail:-119.9535,38.9356": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "I thinks this is already fixed in OSM",
+    "at": "2026-10-18T17:09:37.299Z"
+  },
+  "changed:II>III:Pioneer Trail:-119.9552,38.9240": {
+    "note": "This change is incorrect. I think I may have already changed this in OSM\n\n[Claude, 2026-10-14] Confirmed: you changed way 314177449 to cycleway:both=lane on 2026-10-14 03:38Z (v11, cs190482949). This extract has v10 (cycleway:both=no), which is why it shows as II>III. Exclude matches the other Pioneer Trail changes. Note that the current version (v11) still carries check_date:cycleway=2022-11-10, from John Gilmore setting cycleway:both=no in Nov 2022. If you checked the lanes recently, update check_date:cycleway too, otherwise it reads as a 2022 survey that found no lanes.\n\n[Nick] - OK I'm pretty sure there are marked bike lanes along here. I could double check, as the west end of this marks the city/county line, but I'm pretty sure there's a city bike lane here.\n\n[Claude, 2026-10-15] Verified: way 314177449 is currently v11 (nickspeal, 2026-10-14 03:38Z, https://www.openstreetmap.org/changeset/190482949) with cycleway:both=lane, lcn=yes, surface=asphalt. The extract has v10 with cycleway:both=no, set by John Gilmore on 2022-11-11 via StreetComplete (https://www.openstreetmap.org/changeset/128757311, source=survey), which also added check_date:cycleway=2022-11-10. With no lane tag and lcn=yes, the road came out as Class III. With v11, the next run will show Class II only. The stale check_date:cycleway is still on v11. Not verified: whether lanes are painted at the city/county line at the west end.\nSuggested: Reject (fixed in v11). Optionally confirm on the ground, then update check_date:cycleway.",
+    "at": "2026-10-15T08:05:00.650Z"
+  },
+  "changed:III>I::-120.1771,39.3255": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "I thought I already commented on this. Accept.\n\n[Claude, 2026-10-15] The Class III came from Palisades Drive 372531868. gavinfeiger added shared_lane + bicycle=designated in 2017 (https://www.openstreetmap.org/changeset/49176627). btwhite92 removed them 2022-08-18 (https://www.openstreetmap.org/changeset/125065321). The new Class I is concrete sidewalk 372531952, given bicycle/foot=designated on 2024-12-06 inside a building/landuse changeset (https://www.openstreetmap.org/changeset/160003493). Not verified: whether bikes are signed as designated on that sidewalk.\nSuggested: None (low priority to check the sidewalk designation).",
+    "at": "2026-10-15T08:05:00.670Z"
+  },
+  "changed:III>II:West Lake Boulevard:-120.1608,39.0869": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "changed:III>II:West Lake Boulevard:-120.1635,39.0929": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Confirmed in Street View and remembering from riding here, there is a class 2 bike lane here",
+    "at": "2026-10-15T07:04:56.480Z"
+  },
+  "removed:I>-::-119.9515,38.9905": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Correct. Realigned due to parking lot construction. I'd like to go survey this whole area, but this change on its own is good for now.",
+    "at": "2026-10-15T07:34:12.663Z"
+  },
+  "removed:I>-::-120.0183,38.8566": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "A Class 1 should exist along Apache, but possibly this duplicates a way right next to it? Look into OSM more in the area to see what happened.\n\n[Claude, 2026-10-15] Verified: there is no duplicate. The only cycleway along Apache is way 1516690867 'Apache Ave Bikeway', which you created on 2026-05-19 (https://www.openstreetmap.org/changeset/182855956). The extract has v1, which had no surface tag, so the paved filter dropped it (it is in missing-surface.geojson). You added surface=asphalt in v2 on 2026-10-14 (https://www.openstreetmap.org/changeset/190482819), so it will return as Class I. The road, Apache Avenue 341645471, still has cycleway=lane + lcn=yes, so it also stays Class II. If the painted lane was replaced by the path, the road should probably be cycleway=separate.\nSuggested: Reject (already fixed). Decide whether Apache Ave 341645471 should be cycleway=lane or cycleway=separate.\n\n[Nick] - OK there is both a class2 and a class 1 here. So I expect the new OSM data will undo this removal",
+    "at": "2026-10-18T17:07:59.506Z"
+  },
+  "removed:I>-::-120.1434,39.1689": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Confirmed in street view. This is a sidewalk not a class 1",
+    "at": "2026-10-15T07:41:25.218Z"
+  },
+  "removed:I>-::-120.1455,39.1629": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Realigned trail",
+    "at": "2026-10-15T07:39:16.222Z"
+  },
+  "removed:I>-:SR 89 Trail:-120.1711,39.3438": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Realigned path validated in imagery",
+    "at": "2026-10-15T07:37:47.235Z"
+  },
+  "removed:I>-:Tahoe East Shore Trail:-119.9292,39.2007": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:58.198Z"
+  },
+  "removed:II>-::-120.0074,38.8680": {
+    "decision": "accept",
+    "note": "Yeah I don't think this is an actual bike lane, based on my knowledge of the segment",
+    "at": "2026-10-15T04:13:19.371Z",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "removed:II>-::-120.0234,38.8505": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:39:41.135Z"
+  },
+  "removed:II>-::-120.0280,38.8477": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:43:10.963Z"
+  },
+  "removed:II>-::-120.0285,38.8472": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:43:10.963Z"
+  },
+  "removed:II>-:Emerald Bay Road:-120.0002,38.9061": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Look at the history of this. Street View 2025 shows a small bike lane sight at D st looking southbound. I think it should stay a class 2. I could double check in person\n\n[Claude, 2026-10-15] Verified: way 355391733 (US 50 between D St and E St) had cycleway=lane from 2015 until John Gilmore set cycleway:both=no on 2023-11-10 (v16, https://www.openstreetmap.org/changeset/143877846, StreetComplete CyclewayOverlay, source=survey). It is the same mapper and pattern as the 2022 Pioneer Trail removals. It is still cycleway:both=no in v17. The way to the north, 914719894, still has cycleway=lane. The way to the south, 355391727 (south of E St), has never had a cycleway tag. Not verified: whether lanes exist on the ground.\nSuggested: If Street View or a survey confirms lanes, set cycleway:both=lane on 355391733. Check 355391727 too.",
+    "at": "2026-10-18T17:22:33.723Z"
+  },
+  "removed:II>-:Pioneer Trail:-119.9623,38.9089": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Pretty sure I already changed this. There should be a bike lane here. Double check OSM history on this one.\n\n[Claude, 2026-10-15] Verified: way 314177477 had cycleway=lane from its creation in 2014 until John Gilmore set cycleway:both=no on 2022-11-11 (v7, StreetComplete, https://www.openstreetmap.org/changeset/128757311). The live map predates that edit, and the extract has v7. You restored it as v8 (2026-10-14 03:38Z, cycleway:both=lane, https://www.openstreetmap.org/changeset/190482949), so the next run will show Class II.\nSuggested: Reject (fixed in v8). No further edit needed.",
+    "at": "2026-10-15T08:05:00.651Z"
+  },
+  "removed:II>-:Pioneer Trail:-119.9853,38.8848": {
+    "decision": "reject",
+    "reason": "osm",
+    "note": "Accidentally removed. I updated the tags in OSM and am waiting for that change to propagate. I expect that will put this bike lane back.",
+    "at": "2026-10-14T23:49:05.439Z",
+    "osm_fix": {
+      "tags": "cycleway:both=lane",
+      "ways": [
+        314177439
+      ],
+      "status": "uploaded"
+    },
+    "run": "overlays-tahoe-2026-10-13-old-pipeline"
+  },
+  "removed:II>-:Pioneer Trail:-120.0036,38.8625": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "I thought I already fixed this. Definitely a class 2\n\n[Claude, 2026-10-15] Verified: way 314177470 had cycleway=lane from 2014 until John Gilmore's StreetComplete edit on 2022-11-11 (v5, cycleway:both=no, https://www.openstreetmap.org/changeset/128757311). The extract carries that version. You restored it as v9 (2026-10-14, https://www.openstreetmap.org/changeset/190482949). The same changeset also fixed Pioneer Trail ways 314177439, 914719897 and 914719898, and Herbert Ave 314177405. Mike Bangs added the US 50 / Pioneer Trail roundabout on 2025-11-03 (https://www.openstreetmap.org/changeset/174170975). Its approach ways 1447263870 and 1447263871 have no cycleway tags, so expect a gap of about 60 m at the roundabout.\nSuggested: Reject (fixed in v9). Leave the roundabout approaches without lanes unless lanes are painted there.",
+    "at": "2026-10-15T08:05:00.652Z"
+  },
+  "removed:II>-:Squaw Valley Road:-120.2038,39.2061": {
+    "decision": "reject",
+    "reason": "osm",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "This actually is a bike lane. Confirmed wide shoulder on google maps imagery 2026 and bike lane begin sign on street view 2025\n\n[Claude, 2026-10-15] btwhite92 added cycleway=lane to way 187077001 (now named Olympic Valley Road) on 2016-11-22 (https://www.openstreetmap.org/changeset/43859710). He removed it on 2024-12-26 (https://www.openstreetmap.org/changeset/160652384). That changeset's comment only covers upgrading ski-resort access roads to secondary, so the lane removal looks incidental (inferred). No Olympic Valley Road way has cycleway tags now.\nSuggested: Re-add cycleway=lane (or sided cycleway:right/left) on 187077001. Optionally comment on changeset 160652384.\n\n[Nick], That change seems accidental. It seems appropriate for other portions of this road, but there is a bike lane along this segment.",
+    "at": "2026-10-18T17:24:20.240Z"
+  },
+  "removed:III>-::-119.7215,39.1647": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:40:03.128Z"
+  },
+  "removed:III>-::-119.7219,39.1650": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:40:03.128Z"
+  },
+  "removed:III>-::-119.7339,39.1629": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "at": "2026-10-15T07:34:19.073Z"
+  },
+  "removed:III>-:Palisades Drive:-120.1771,39.3240": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Verified in Street View. There is a small bike route sign, but it's otherwise not a safe bike route, so better to just leave that off, and let the multi-use path carry bikes",
+    "at": "2026-10-15T07:21:57.761Z"
+  },
+  "removed:III>-:Palisades Drive:-120.1788,39.3222": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-13-old-pipeline",
+    "note": "Verified in Street View. There is a small bike route sign, but it's otherwise not a safe bike route, so better to just leave that off, and let the multi-use path carry bikes",
+    "at": "2026-10-15T07:21:57.761Z"
+  },
+  "removed:III>-:South Shore Drive:-120.2334,39.3241": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Ian confirms there is no bike route markings",
+    "at": "2026-10-18T21:23:37.069Z"
+  },
+  "removed:III>-:South Shore Drive:-120.2357,39.3235": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Ian confirms there is no bike route markings",
+    "at": "2026-10-18T21:23:37.069Z"
+  },
+  "removed:III>-:South Shore Drive:-120.2450,39.3226": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "Ian confirms there is no bike route markings",
+    "at": "2026-10-18T21:23:37.069Z"
+  },
+  "removed:III>-:Tahoe Keys Boulevard:-120.0041,38.9289": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "I think I recently changed this in OSM. This section along Keys blvd should be Class 2 not 3 all the way north to Venice. Bike Route removed is good, but is there a bike lane added? Check in the latest OSM.\n\n[Claude, 2026-10-15] Same as the other Tahoe Keys entry (this is the opposite carriageway). Ways 62150948 and 307623807 have cycleway:right=lane + lcn=yes and reach Venice. The III was dropped only because of the pipeline's lane-over-route rule, and Class II is already present.\nSuggested: Switch to Accept.",
+    "at": "2026-10-18T17:23:05.730Z"
+  },
+  "removed:III>-:Tahoe Keys Boulevard:-120.0042,38.9289": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "note": "I think I recently changed this in OSM. This section along Keys blvd should be Class 2 not 3 all the way north to Venice. Bike Route removed is good, but is there a bike lane added? Check in the latest OSM.\n\n[Claude, 2026-10-15] Verified: no OSM edit caused this. Carriageways 62150948 and 307623807 both have cycleway:right=lane + lcn=yes, unchanged since 2017–2019, and both reach Venice Drive East. The old pipeline drew them as both Class II and Class III. This run rejects Class III on roads with a lane (a deliberate pipeline change), so only the III disappears. Class II is already present up to Venice in the new output.\nSuggested: Switch to Accept. No OSM edit is needed.",
+    "at": "2026-10-18T17:23:05.730Z"
+  }
+}
