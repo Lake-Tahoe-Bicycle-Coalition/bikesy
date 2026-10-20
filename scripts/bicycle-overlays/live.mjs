@@ -5,9 +5,10 @@ import path from 'node:path';
 
 const API = 'https://api.mapbox.com/datasets/v1';
 
-async function fetchDataset(datasetId, token) {
+// fresh: Mapbox answers are cached for 5 minutes; vary the URL to see changes just made.
+export async function fetchDataset(datasetId, token, { fresh = false } = {}) {
   const features = [];
-  let url = `${API}/${datasetId}/features?limit=100&access_token=${token}`;
+  let url = `${API}/${datasetId}/features?limit=100&access_token=${token}${fresh ? `&_=${Date.now()}` : ''}`;
   while (url) {
     const res = await fetch(url);
     if (!res.ok)
