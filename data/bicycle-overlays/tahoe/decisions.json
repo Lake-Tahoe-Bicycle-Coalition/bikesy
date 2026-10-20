@@ -99,9 +99,9 @@
   "added:->I::-119.9911,38.9034": {
     "decision": "reject",
     "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
     "note": "No. This is a service road that bicycles arent allowed on west of the river\n\n[Claude, 2026-10-15] Verified: way 290243618 (cycleway) used to end at ford node 441510781 on the Upper Truckee River. quincylvania extended it about 75 m west to airport gate node 11999312221 (barrier=gate, access=private) on 2024-06-21 (https://www.openstreetmap.org/changeset/153001956). That extension is the stub that now shows as Class I.\nSuggested: Split 290243618 at node 441510781. Retag the west stub as highway=service + access=private/bicycle=no, or delete it.",
-    "at": "2026-10-18T17:24:07.013Z"
+    "at": "2026-10-19T04:47:29.215Z"
   },
   "added:->I::-120.0049,38.9132": {
     "decision": "accept",
@@ -131,11 +131,10 @@
     "at": "2026-10-15T07:31:20.570Z"
   },
   "added:->I::-120.0257,38.8578": {
-    "decision": "reject",
-    "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
     "note": "I also commented on another Way, perhaps there are duplicates. This is mostly correct, but I'd like to split it to show the portion west of the parking lot as Class 1 and through the parking lot as Class 3.\n\n[Claude, 2026-10-15] Verified: this is cycleway 1422146572, which sltxc created on 2025-08-13 (https://www.openstreetmap.org/changeset/170405091). It is not a duplicate. The chain runs end to end: W San Bernardino Ave 341645476, then cycleway 341645506, then bridge 1422146573, then 1422146572, which ends at node 783788436, where E San Bernardino Ave 10331807 and parking aisle 1225243105 start. The lot spans about lon -120.0263 to -120.0247, so only the first ~30 m of 1422146572 is west of the lot. Leftovers: 1422146572 still has lcn=proposed, and bridge 1422146573 still has proposed=cycleway + lcn=proposed. Your changeset 190483036 (https://www.openstreetmap.org/changeset/190483036) also added segregated=no to residential roads 341645476 and 10331807 and to about 40 nodes, including stop sign 13025787375. That looks like an accidental tag paste.\nSuggested: Split 1422146572 at about -120.0263. Make the lot piece Class III (e.g. service + lcn=yes) or drop it and put lcn=yes on the aisle. Remove the proposed tags and the stray segregated=no.",
-    "at": "2026-10-18T17:20:41.572Z"
+    "at": "2026-10-19T04:44:05.066Z"
   },
   "added:->I::-120.0287,38.8564": {
     "decision": "accept",
@@ -156,17 +155,15 @@
     "at": "2026-10-15T07:38:36.029Z"
   },
   "added:->I::-120.0651,38.9414": {
-    "decision": "reject",
-    "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
-    "at": "2026-10-18T17:21:43.359Z"
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
+    "at": "2026-10-19T04:47:08.835Z"
   },
   "added:->I::-120.0653,38.9374": {
-    "decision": "reject",
-    "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
     "note": "Almost perfect, but I think the way geometry could be adjusted so that there is no gap between the class 1 and 2 segments. They are correctly positioned laterally, but the start and end could change a bit.\n\n[Claude, 2026-10-15] Verified: in OSM there is no gap. Cycleway 1091097181 ends at node 9247397978, which is also the first node of the Class II way 1001925007 (Baldwin Beach Road). Its south end, node 9247347752, lies on cycleway 814344653, whose name is misspelled 'Bladwin Beach Road'. The ~8 m gap on the review map comes from diff simplification. In the pipeline output, both lines meet at -120.06583, 38.93856.\nSuggested: No OSM fix is needed at the Class I/II junction (could switch to Accept). Optionally fix the 'Bladwin' typo on 814344653.",
-    "at": "2026-10-18T17:21:43.359Z"
+    "at": "2026-10-19T04:47:08.834Z"
   },
   "added:->I::-120.1110,39.2806": {
     "decision": "accept",
@@ -253,6 +250,11 @@
     "run": "overlays-tahoe-2026-10-13-old-pipeline",
     "note": "Might as well trust OSM I guess",
     "at": "2026-10-15T07:11:05.741Z"
+  },
+  "added:->I:Martis Valley Trail:-120.1110,39.2806": {
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-19-old-pipeline",
+    "at": "2026-10-20T20:55:04.338Z"
   },
   "added:->I:Martis Valley Trail:-120.1117,39.3014": {
     "decision": "accept",
@@ -365,11 +367,10 @@
     "at": "2026-10-15T07:24:55.839Z"
   },
   "added:->II:Baldwin Beach Road:-120.0657,38.9397": {
-    "decision": "reject",
-    "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "decision": "accept",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
     "note": "Almost perfect, but I think the way geometry could be adjusted so that there is no gap between the class 1 and 2 segments. They are correctly positioned laterally, but the start and end could change a bit.\n\n[Claude, 2026-10-15] Verified: way 1001925007 (cycleway=lane, created by you in 2021, https://www.openstreetmap.org/changeset/113718961; 010ender56 added surface=asphalt on 2026-10-11) shares its south node with Class I cycleway 1091097181, so there is no gap there. At the north end there is a real gap of about 12 m. From node 11930868912, way 1286295294 (Baldwin Beach Road, no bike tags) runs to roundabout cycleway ring 1001925004. That ring had no surface tag in the extract. You added one on 2026-10-14 (https://www.openstreetmap.org/changeset/190482819), so it will appear as Class I next run.\nSuggested: To close the gap, add cycleway=lane to 1286295294 or extend 1001925007 to node 9247397964. Otherwise this could switch to Accept.",
-    "at": "2026-10-18T17:21:43.359Z"
+    "at": "2026-10-19T04:47:08.835Z"
   },
   "added:->II:Clear Creek Avenue:-119.7623,39.1176": {
     "decision": "accept",
@@ -500,8 +501,8 @@
   },
   "added:->III:East San Bernardino Avenue:-120.0223,38.8579": {
     "decision": "accept",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
-    "at": "2026-10-18T17:20:38.063Z"
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
+    "at": "2026-10-19T04:44:05.066Z"
   },
   "added:->III:Helen Avenue:-119.9995,38.9146": {
     "decision": "accept",
@@ -630,9 +631,9 @@
   "removed:II>-:Emerald Bay Road:-120.0002,38.9061": {
     "decision": "reject",
     "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
     "note": "Look at the history of this. Street View 2025 shows a small bike lane sight at D st looking southbound. I think it should stay a class 2. I could double check in person\n\n[Claude, 2026-10-15] Verified: way 355391733 (US 50 between D St and E St) had cycleway=lane from 2015 until John Gilmore set cycleway:both=no on 2023-11-10 (v16, https://www.openstreetmap.org/changeset/143877846, StreetComplete CyclewayOverlay, source=survey). It is the same mapper and pattern as the 2022 Pioneer Trail removals. It is still cycleway:both=no in v17. The way to the north, 914719894, still has cycleway=lane. The way to the south, 355391727 (south of E St), has never had a cycleway tag. Not verified: whether lanes exist on the ground.\nSuggested: If Street View or a survey confirms lanes, set cycleway:both=lane on 355391733. Check 355391727 too.",
-    "at": "2026-10-18T17:22:33.723Z"
+    "at": "2026-10-19T04:47:17.812Z"
   },
   "removed:II>-:Pioneer Trail:-119.9623,38.9089": {
     "decision": "reject",
@@ -665,9 +666,9 @@
   "removed:II>-:Squaw Valley Road:-120.2038,39.2061": {
     "decision": "reject",
     "reason": "osm",
-    "run": "overlays-tahoe-2026-10-18-old-pipeline",
+    "run": "overlays-tahoe-2026-10-18b-old-pipeline",
     "note": "This actually is a bike lane. Confirmed wide shoulder on google maps imagery 2026 and bike lane begin sign on street view 2025\n\n[Claude, 2026-10-15] btwhite92 added cycleway=lane to way 187077001 (now named Olympic Valley Road) on 2016-11-22 (https://www.openstreetmap.org/changeset/43859710). He removed it on 2024-12-26 (https://www.openstreetmap.org/changeset/160652384). That changeset's comment only covers upgrading ski-resort access roads to secondary, so the lane removal looks incidental (inferred). No Olympic Valley Road way has cycleway tags now.\nSuggested: Re-add cycleway=lane (or sided cycleway:right/left) on 187077001. Optionally comment on changeset 160652384.\n\n[Nick], That change seems accidental. It seems appropriate for other portions of this road, but there is a bike lane along this segment.",
-    "at": "2026-10-18T17:24:20.240Z"
+    "at": "2026-10-19T04:47:42.923Z"
   },
   "removed:III>-::-119.7215,39.1647": {
     "decision": "accept",
