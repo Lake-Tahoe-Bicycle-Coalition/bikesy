@@ -104,32 +104,20 @@ Production is untouched:
 | Frontend (`bikesy` project)        | https://bikesy-hdi05qr7d-tahoebike.vercel.app (built from this branch at 87112cb)                                                                        |
 | Backend (`bikesy-backend` project) | https://bikesy-backend-386v830hz-tahoebike.vercel.app (code from bikesy-backend `turn-by-turn-nav`, data image v2-20261019, the same data as production) |
 
-Both preview URLs require a Vercel login (Standard Deployment Protection). The frontend can't
-call a protected backend from the browser, so the previews are meant to be reached through
-public test subdomains, which the protection doesn't cover:
+**Live test site: https://navtest.tahoebike.org/?nav=1**, or add `&sim=1` for a simulated
+ride. A simulated ride against it passes end to end (2026-10-20).
 
-- `navtest.tahoebike.org` → the frontend preview
+- `navtest.tahoebike.org` → the frontend preview.
 - `navtest-api.tahoebike.org` → the backend preview. The frontend preview was built with
   `NEXT_PUBLIC_BIKESY_API_URL=https://navtest-api.tahoebike.org/route`.
-
-**Pending:** both names need a DNS record at Hover. `*.tahoebike.org` has a wildcard A record
-pointing at another server, so Vercel can't issue certificates until these exist:
-
-```
-navtest      CNAME  cname.vercel-dns.com
-navtest-api  CNAME  cname.vercel-dns.com
-```
-
-Then run:
-
-```sh
-vercel alias set bikesy-backend-386v830hz-tahoebike.vercel.app navtest-api.tahoebike.org --scope tahoebike
-vercel alias set bikesy-hdi05qr7d-tahoebike.vercel.app navtest.tahoebike.org --scope tahoebike
-```
-
-Test on a phone at `https://navtest.tahoebike.org/?nav=1`, or `?nav=1&sim=1` for a
-simulated ride. These aliases point at single deployments, not at the projects, so production
-deploys never move them. Remove them with `vercel alias rm <name> --scope tahoebike`.
+- DNS: both names are CNAMEs to `cname.vercel-dns.com` at Hover. They need explicit records,
+  because `*.tahoebike.org` has a wildcard A record pointing at another server.
+- Deployment Protection is **off** for both the `bikesy` and `bikesy-backend` projects.
+  Vercel's Standard Protection also covers custom domains on preview deployments, so with it
+  on, the browser couldn't reach the backend preview. Both projects only serve public
+  content.
+- The aliases point at single deployments, not at the projects, so production deploys never
+  move them. Remove them with `vercel alias rm <name> --scope tahoebike`.
 
 ### Redeploying after changes
 
@@ -142,6 +130,9 @@ vercel deploy --cwd "$X" --scope tahoebike --target preview \
   --build-env NEXT_PUBLIC_BIKESY_API_URL=https://navtest-api.tahoebike.org/route
 vercel alias set <new deployment URL> navtest.tahoebike.org --scope tahoebike
 ```
+
+If the certificate step fails right after a new DNS record, Vercel may still have the old
+wildcard answer cached. `vercel certs issue <name> --scope tahoebike` and a retry fixed it.
 
 The backend steps are in bikesy-backend's `docs/NAVIGATION-STATUS.md`.
 
@@ -160,8 +151,7 @@ The backend steps are in bikesy-backend's `docs/NAVIGATION-STATUS.md`.
 
 ## Next steps
 
-1. Add the two DNS records and aliases above, then ride with the preview on iPhone and Android
-   (Step 3 checklist in the plan).
+1. Ride with the test site on iPhone and Android (the Step 3 checklist in the plan).
 2. Send the plan's Step 0 pitch to Brendan.
 3. Open the backend PR, then release `nav=1` to production with the release-backend skill.
 4. Open the frontend PR. Do the Step 4 items: a permission explainer, a screen-on and battery
