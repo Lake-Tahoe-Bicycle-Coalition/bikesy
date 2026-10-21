@@ -117,20 +117,16 @@ ride. A simulated ride against it passes end to end (2026-10-20).
   Vercel's Standard Protection also covers custom domains on preview deployments, so with it
   on, the browser couldn't reach the backend preview. Both projects only serve public
   content.
-- The aliases point at single deployments, not at the projects, so production deploys never
-  move them. Remove them with `vercel alias rm <name> --scope tahoebike`.
+- `navtest-api` is an alias on a single backend deployment; `navtest` follows this branch's
+  latest frontend deployment. Production deploys move neither.
 
 ### Redeploying after changes
 
-Frontend, from a clean export of the branch, so no local `.env.local` is uploaded:
-
-```sh
-X=$(mktemp -d) && git archive turn-by-turn-nav | tar -x -C "$X"
-vercel link --yes --cwd "$X" --scope tahoebike --project bikesy && rm -f "$X/.env.local"
-vercel deploy --cwd "$X" --scope tahoebike --target preview \
-  --build-env NEXT_PUBLIC_BIKESY_API_URL=https://navtest-api.tahoebike.org/route
-vercel alias set <new deployment URL> navtest.tahoebike.org --scope tahoebike
-```
+Frontend: push `turn-by-turn-nav` to `origin` (Lake-Tahoe-Bicycle-Coalition/bikesy). The
+`bikesy` Vercel project builds every push as a preview. `navtest.tahoebike.org` is a project
+domain bound to this branch, and `NEXT_PUBLIC_BIKESY_API_URL=https://navtest-api.tahoebike.org/route`
+is a preview env var scoped to this branch, so a push updates the test site by itself.
+Production (`master`) is unaffected.
 
 If the certificate step fails right after a new DNS record, Vercel may still have the old
 wildcard answer cached. `vercel certs issue <name> --scope tahoebike` and a retry fixed it.
