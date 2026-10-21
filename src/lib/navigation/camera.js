@@ -13,7 +13,7 @@ import { angleDiff, distance } from './geo.js';
 // continuously between fixes instead; the rate cap keeps a big change (a U-turn, the
 // compass taking over) from spinning the whole map at once. Field-tested first at 40 ms
 // with no cap, which looked jumpy.
-export const HEADING_EASE_MS = 600;
+export const HEADING_EASE_MS = 200;
 export const MAX_TURN_DEG_PER_S = 60;
 
 // Display heading `current` moved toward `target` over `dt` ms: shortest way round
