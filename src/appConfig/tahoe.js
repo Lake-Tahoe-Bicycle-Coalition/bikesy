@@ -1,5 +1,8 @@
 const config = {
-  BIKESY_API_URL: 'https://bikesy-backend.tahoebike.org/route',
+  // Temporary: the production backend doesn't support /route?nav=1 yet. This deployment
+  // does (bikesy-backend branch turn-by-turn-nav). Switch back to
+  // https://bikesy-backend.tahoebike.org/route once nav=1 is released there.
+  BIKESY_API_URL: 'https://navtest-api.tahoebike.org/route',
   // Round elevation chart Y-axis to nearest 1000 feet to make hills more visible.
   // Previously the range was 0 to max, which made hills imperceptible at high elevations.
   // Dynamic rounding (vs static values) handles multiple service areas at different elevations

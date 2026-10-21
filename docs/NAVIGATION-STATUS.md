@@ -17,8 +17,8 @@ covers Step 2: porting the demo into the frontend. The backend half (Step 1) is 
 | Step 3: field test       | Not started. Nothing has been tried on a real phone yet                                    |
 | Step 4: launch           | Not started                                                                                |
 
-Both branches are local and unpushed. The base is `upstream/master` (eea25b7) here, and
-`origin/main` (0bb6477) for the backend.
+This branch is pushed to the LTBC fork and has a PR against the fork's `master`. The backend
+branch is still local, based on `origin/main` (0bb6477).
 
 ## What's built
 
