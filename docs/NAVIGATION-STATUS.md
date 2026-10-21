@@ -36,8 +36,8 @@ Both branches are local and unpushed. The base is `upstream/master` (eea25b7) he
   (`next.config.mjs`).
 - **Region setting `NAVIGATION_ENABLED`:**
   - `false` by default, so SF and Contra Costa are unchanged.
-  - Tahoe uses `'url'`, so navigation shows only with `?nav=1` in the page URL (for the
-    field test). Set it to `true` at launch.
+  - Tahoe uses `true`, so navigation is on for everyone there. There is no URL gate
+    (`?sim=1` and `?debug=1` remain as dev hooks).
 - **Routing:** route requests send `nav=1` only for rides and reroutes. Planning requests
   are unchanged.
 - **Analytics:** `nav_start`, `nav_reroute`, `nav_arrive` and `nav_end_early` send only the
@@ -82,7 +82,8 @@ Code:
   - a ride runs start, turn, missed turn, reroute, arrival, Done, with and without GPS noise;
   - failure paths show a message and stay on planning: location refused, an old backend,
     offline, and a failed download;
-  - SF, desktop, and Tahoe without `?nav=1` are pixel-identical to `upstream/master`.
+  - SF and desktop are pixel-identical to `upstream/master`. Tahoe is no longer, since
+    navigation is on there.
 - An independent code review found two bugs, both fixed and covered by tests: a blank screen
   after switching to Directions during start, and a wake lock and compass left on after a
   cancelled start.
@@ -104,7 +105,7 @@ Production is untouched:
 | Frontend (`bikesy` project)        | https://bikesy-hdi05qr7d-tahoebike.vercel.app (built from this branch at 87112cb)                                                                        |
 | Backend (`bikesy-backend` project) | https://bikesy-backend-386v830hz-tahoebike.vercel.app (code from bikesy-backend `turn-by-turn-nav`, data image v2-20261019, the same data as production) |
 
-**Live test site: https://navtest.tahoebike.org/?nav=1**, or add `&sim=1` for a simulated
+**Live test site: https://navtest.tahoebike.org/**, or add `?sim=1` for a simulated
 ride. A simulated ride against it passes end to end (2026-10-20).
 
 - `navtest.tahoebike.org` → the frontend preview.
