@@ -34,10 +34,9 @@ branch is still local, based on `origin/main` (0bb6477).
 - **Navigation engine:** Ferrostar 0.58.0, pinned exactly. It loads with a dynamic `import()`
   only when Start ride is tapped (about 317 kB gzipped). It works with Turbopack and webpack
   (`next.config.mjs`).
-- **Region setting `NAVIGATION_ENABLED`:**
-  - `false` by default, so SF and Contra Costa are unchanged.
-  - Tahoe uses `true`, so navigation is on for everyone there. There is no URL gate
-    (`?sim=1` and `?debug=1` remain as dev hooks).
+- **Availability:** navigation is on in all regions, for everyone. There is no region
+  setting or URL gate (`?sim=1` and `?debug=1` remain as dev hooks). A region's backend
+  must support `/route?nav=1` for rides to work.
 - **Routing:** route requests send `nav=1` only for rides and reroutes. Planning requests
   are unchanged.
 - **Analytics:** `nav_start`, `nav_reroute`, `nav_arrive` and `nav_end_early` send only the
@@ -82,8 +81,8 @@ Code:
   - a ride runs start, turn, missed turn, reroute, arrival, Done, with and without GPS noise;
   - failure paths show a message and stay on planning: location refused, an old backend,
     offline, and a failed download;
-  - SF and desktop are pixel-identical to `upstream/master`. Tahoe is no longer, since
-    navigation is on there.
+  - Desktop was pixel-identical to `upstream/master`. On phones the Start ride button now
+    appears in every region, so those screens differ.
 - An independent code review found two bugs, both fixed and covered by tests: a blank screen
   after switching to Directions during start, and a wake lock and compass left on after a
   cancelled start.
