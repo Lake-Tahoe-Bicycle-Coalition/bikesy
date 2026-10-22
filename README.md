@@ -92,8 +92,7 @@ and reroutes. Planning requests don't send it.
 
 For development, add `?sim=1` to ride a simulated rider (`&warp=8&noise=6` speeds it up and
 adds GPS noise) and `?debug=1` for a heading and GPS readout. Set
-`NEXT_PUBLIC_BIKESY_API_URL` to point at a different backend. See
-`docs/NAVIGATION-STATUS.md` for current status.
+`NEXT_PUBLIC_BIKESY_API_URL` to point at a different backend.
 
 ## Bicycle overlay tags
 
