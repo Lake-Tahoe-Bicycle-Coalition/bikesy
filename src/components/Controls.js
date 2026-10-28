@@ -31,6 +31,7 @@ const Controls = ({
   const startLocation = useSelector((state) => state.search.startLocation)
   const endAddress = useSelector((state) => state.search.endAddress)
   const endLocation = useSelector((state) => state.search.endLocation)
+  const navigationStatus = useSelector((state) => state.navigation.status)
 
   // The selects always show the current scenario, so there is no separate state to sync.
   const selections = scenarioToSelections(appConfig, scenario)
@@ -42,6 +43,16 @@ const Controls = ({
   const [endCoordinates, setEndCoordinates] = useState()
   const [startPlacePending, setStartPlacePending] = useState(false)
   const [endPlacePending, setEndPlacePending] = useState(false)
+  // Bumped on each Start ride to swap in fresh address fields, in case iOS drops the
+  // old fields' typing history with them. Otherwise bumps that shake a handlebar-mounted
+  // phone can raise iOS's "Undo Typing" prompt mid-ride.
+  const [addressFieldsKey, setAddressFieldsKey] = useState(0)
+
+  useEffect(() => {
+    if (navigationStatus === 'starting') {
+      setAddressFieldsKey((key) => key + 1)
+    }
+  }, [navigationStatus])
 
   const processForm = (event) => {
     event.preventDefault()
@@ -200,6 +211,7 @@ const Controls = ({
             S
           </div>
           <PlacesAutocomplete
+            key={addressFieldsKey}
             id="start-address"
             value={startAddressInput}
             onChange={(value) => {
@@ -242,6 +254,7 @@ const Controls = ({
             E
           </div>
           <PlacesAutocomplete
+            key={addressFieldsKey}
             id="end-address"
             value={endAddressInput}
             onChange={(value) => {
