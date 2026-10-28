@@ -24,6 +24,7 @@ import {
   getPathDistance,
   setIsStartFromQR,
 } from '../lib/map';
+import { shouldReloadToForgetTyping } from '../lib/shake-to-undo';
 import { updateUrlParams, readUrlParams, validateUrlParams } from '../lib/url';
 
 import {
@@ -319,6 +320,11 @@ const IndexPage = () => {
         formatLatLngForUrl(endLocation),
         scenario,
       ]);
+
+      // Rides only start from the mobile layout. The reload loads the route from the URL.
+      if (isMobile && shouldReloadToForgetTyping()) {
+        window.location.reload();
+      }
     }
   }, [startAddress, startLocation, endAddress, endLocation, scenario]);
 

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import _ from 'lodash'
 import classNames from 'classnames'
 import PlacesAutocomplete from './PlacesAutocomplete'
+import { noteAddressTyped } from '../lib/shake-to-undo'
 
 import { clearRoute } from '../redux/slices/search'
 import appConfig from '../appConfig'
@@ -203,6 +204,7 @@ const Controls = ({
             id="start-address"
             value={startAddressInput}
             onChange={(value) => {
+              noteAddressTyped()
               setStartAddressInput(value)
               setStartCoordinates()
             }}
@@ -245,6 +247,7 @@ const Controls = ({
             id="end-address"
             value={endAddressInput}
             onChange={(value) => {
+              noteAddressTyped()
               setEndAddressInput(value)
               setEndCoordinates()
             }}
