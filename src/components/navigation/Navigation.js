@@ -84,6 +84,18 @@ function startErrorMessage(error) {
     : `Couldn't start navigation. ${reason}`;
 }
 
+// Leaves no text field focused for the ride, so bumps that shake the phone are less
+// likely to raise iOS's "Undo Typing" prompt. Focus can sit inside the address
+// widgets' shadow roots, so blur each focused element down through them.
+const blurFocusedField = () => {
+  let element = document.activeElement;
+  while (element && element !== document.body) {
+    const inner = element.shadowRoot?.activeElement;
+    element.blur();
+    element = inner;
+  }
+};
+
 // Turn-by-turn navigation: the Start ride button on the planning screen, then the
 // navigation screens over the full-screen map. The ride itself runs in a
 // RideController, which publishes what to show to the navigation slice.
@@ -149,6 +161,7 @@ const Navigation = ({ isMobile }) => {
     if (!flags.simulate) {
       enableCompass();
     }
+    blurFocusedField();
 
     const attempt = {};
     attemptRef.current = attempt;
